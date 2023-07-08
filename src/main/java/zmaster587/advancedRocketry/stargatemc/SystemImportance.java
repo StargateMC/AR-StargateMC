@@ -53,8 +53,8 @@ public enum SystemImportance {
     }
 
     public Long getLifeTime() {
-        
-        switch (this) {
+        return Long.valueOf(300 * 1000);
+       /* switch (this) {
             default:
                 return Long.valueOf(3600000L); // If the system hasnt had at least 60 minutes of playtime, its life is 1 hour.
             case VeryLow:
@@ -70,5 +70,6 @@ public enum SystemImportance {
             case Critical:
                 return Long.valueOf(7776000000L); // If the system has had 24 hours of playtime, its life is 30 days.
         }
+        */
     }
 }
