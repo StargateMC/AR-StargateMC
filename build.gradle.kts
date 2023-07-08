@@ -121,7 +121,7 @@ repositories {
     }
     maven {
         name = "Galacticraft"
-        url = uri("https://maven.galacticraft.dev")
+        url = uri("https://maven.galacticraft.net/repository/legacy/")
     }
     maven {
         name = "LibVulpes"
@@ -139,10 +139,10 @@ dependencies {
     compileOnly("net.industrial-craft:industrialcraft-2:$icVersion:dev")
     //implementation("zmaster587.libVulpes:LibVulpes:$mcVersion-$libVulpesVersion-$libVulpesBuildNum-deobf")
 
-    compileOnly("micdoodle8.mods:galacticraft-api:$gcVersion")
-    compileOnly("micdoodle8.mods:galacticraft-core:$gcVersion")
-    compileOnly("micdoodle8.mods:galacticraft-planets:$gcVersion")
-    compileOnly("micdoodle8.mods:micdoodlecore:$gcVersion")
+    //compileOnly("micdoodle8.mods:galacticraft-api:$gcVersion")
+    //compileOnly("micdoodle8.mods:galacticraft-core:$gcVersion")
+    //compileOnly("micdoodle8.mods:galacticraft-planets:$gcVersion")
+    //compileOnly("micdoodle8.mods:micdoodlecore:$gcVersion")
 
     compileOnly(fg.deobf("mezz.jei:jei_${mcVersion}:${jeiVersion}:api"))
     runtimeOnly(fg.deobf("mezz.jei:jei_${mcVersion}:${jeiVersion}"))
