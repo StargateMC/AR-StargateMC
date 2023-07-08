@@ -77,6 +77,8 @@ public class WorldProviderSpace extends WorldProviderPlanet {
 					return "RP_Lord_Yu_Hatak";
 				case -9020:
 					return "RP_NakaiShip";
+				case -9021:
+					return "RP_StructureTemplates";
 				default:
 					return "ERROR";
 							

@@ -1120,6 +1120,7 @@ public class AdvancedRocketry {
 		net.minecraftforge.common.DimensionManager.registerDimension(-9018, DimensionManager.spaceDimensionType); // Anubis
 		net.minecraftforge.common.DimensionManager.registerDimension(-9019, DimensionManager.spaceDimensionType); // Lord Yu
 		net.minecraftforge.common.DimensionManager.registerDimension(-9020, DimensionManager.spaceDimensionType); // Lord Yu
+		net.minecraftforge.common.DimensionManager.registerDimension(-9021, DimensionManager.spaceDimensionType); // Lord Yu
 
 		ARConfiguration.loadPostInit();
 		//TODO recipes?
