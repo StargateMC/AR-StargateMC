@@ -433,7 +433,21 @@ public class WorldProviderPlanet extends WorldProvider implements IPlanetaryProv
 
 	@Override
 	public String getSaveFolder() {
-		return "advRocketry/" + super.getSaveFolder();
+		switch (this.getDimension()) {
+		case -102:
+			return "RP_Earth";
+		case -202:
+			return "RP_Atlantis";
+		case -203:
+			return "RP_Asura";
+		case -6:
+			return "RP_Abydos";
+		case -38:
+			return "RP_Chulak";
+		case -302:
+			return "RP_Othala";
+		}
+		return DimensionManager.getInstance().getDimensionProperties(this.getDimension()).getName();
 	}
 
 	@Override

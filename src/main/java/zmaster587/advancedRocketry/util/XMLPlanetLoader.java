@@ -705,8 +705,36 @@ public class XMLPlanetLoader {
 				}
 			}
 
+			nameNode = planetNode.getAttributes().getNamedItem("isRandomGenerated");
+			try {
+				star.isRandomGenerated = Boolean.parseBoolean(nameNode.getNodeValue());
+			} catch (Exception e) {
+				AdvancedRocketry.logger.warn("Invalid isRandomGenerated flag!");
+			}
+			nameNode = planetNode.getAttributes().getNamedItem("lastVisit");
+			try {
+				star.lastVisit = Long.parseLong(nameNode.getNodeValue());
+			} catch (Exception e) {
+				AdvancedRocketry.logger.warn("Invalid lastVisit flag!");
+			}
+			nameNode = planetNode.getAttributes().getNamedItem("eventCounter");
+			try {
+				star.eventCounter = Integer.parseInt(nameNode.getNodeValue());
+			} catch (Exception e) {
+				AdvancedRocketry.logger.warn("Invalid eventCounter flag!");
+			}
+			nameNode = planetNode.getAttributes().getNamedItem("visitors");
+			try {
+				String visitors = nameNode.getNodeValue();
+				for (String uuid : visitors.split(":")) {
+					if (uuid == null || uuid.equals("")) continue;
+					star.visitors.add(UUID.fromString(uuid));
+				}
+			} catch (Exception e) {
+				AdvancedRocketry.logger.warn("Invalid visitors flag!");
+			}
 			nameNode = planetNode.getAttributes().getNamedItem(ATTR_NUMPLANETS);
-
+			
 			try {
 				maxPlanetNumber.put(star ,Integer.parseInt(nameNode.getNodeValue()));
 			} catch (Exception e) {
@@ -840,8 +868,18 @@ public class XMLPlanetLoader {
 			nodeStar.setAttribute(ATTR_SIZE, Float.toString(star.getSize()));
 			nodeStar.setAttribute(ATTR_NUMPLANETS, "0");
 			nodeStar.setAttribute(ATTR_NUMGASPLANETS, "0");
-			
-
+			nodeStar.setAttribute("isRandomGenerated",  Boolean.toString(star.isRandomGenerated));
+			String s = "";
+			for (UUID id : star.visitors) {
+				if (s != "") {
+					s += ":" + id.toString();
+				} else {
+					s = id.toString();
+				}
+			}
+			nodeStar.setAttribute("visitors",  s);
+			nodeStar.setAttribute("lastVisit",  Long.toString(star.lastVisit));
+			nodeStar.setAttribute("eventCounter",  Integer.toString(star.eventCounter));
 			for(StellarBody star2 : star.getSubStars()) {
 				Element nodeSubStar = doc.createElement(ELEMENT_STAR);
 				

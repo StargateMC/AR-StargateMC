@@ -6,14 +6,30 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.common.util.Constants.NBT;
 import zmaster587.advancedRocketry.api.dimension.IDimensionProperties;
 import zmaster587.advancedRocketry.dimension.DimensionProperties;
+import zmaster587.advancedRocketry.stargatemc.SystemImportance;
 import zmaster587.advancedRocketry.util.SpacePosition;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
 public class StellarBody {
+
+
+	// StargateMC Changes
+
+	// Time in Linux milliseconds of the last visit.
+	public Long lastVisit = (long)-1;
+	// List of UUIDs for players. Will be used for notifications later.
+	public ArrayList<UUID> visitors = new ArrayList<>();
+
+	// Number of events recorded. Used to calculate timebomb time.
+	public int eventCounter = 0;
+
+	// True or false, is the system randomly generated. Default is false. If true, the star system is subject to timebombing. False it is not.
+	public boolean isRandomGenerated = false;
 
 	private int temperature;
 	private HashMap<Integer,IDimensionProperties> planets;
@@ -23,7 +39,7 @@ public class StellarBody {
 	int id;
 	float size;
 	String name;
-	short posX, posZ;
+	int posX, posZ;
 	public List<StellarBody> subStars;
 	float starSeperation;
 	private boolean isBlackHole;
@@ -35,6 +51,7 @@ public class StellarBody {
 		subStars = new LinkedList<>();
 		starSeperation = 5f;
 		isBlackHole = false;
+		lastVisit = System.currentTimeMillis();
 	}
 	
 	public List<StellarBody> getSubStars() {
@@ -79,11 +96,11 @@ public class StellarBody {
 	}
 
 	public void setPosX(int x) {
-		posX = (short)x;
+		posX = x;
 	}
 
 	public void setPosZ(int x) {
-		posZ = (short)x;
+		posZ = x;
 	}
 
 	public int getPosX() {
@@ -229,12 +246,24 @@ public class StellarBody {
 		nbt.setInteger("id", this.id);
 		nbt.setInteger("temperature", temperature);
 		nbt.setString("name", name);
-		nbt.setShort("posX", posX);
-		nbt.setShort("posZ", posZ);
+		nbt.setInteger("posX", posX);
+		nbt.setInteger("posZ", posZ);
 		nbt.setFloat("size", size);
 		nbt.setFloat("seperation", starSeperation);
 		nbt.setBoolean("isBlackHole", isBlackHole);
-		
+		nbt.setBoolean("isRandomGenerated", this.isRandomGenerated);
+		String s = "";
+		for (UUID id : visitors) {
+			if (s != "") {
+				s += ":" + id.toString();
+			} else {
+				s = id.toString();
+			}
+		}
+		nbt.setString("visitors", s);
+		nbt.setLong("lastVisit", this.lastVisit);
+		nbt.setInteger("eventCounter", this.eventCounter);
+
 		NBTTagList list = new NBTTagList();
 		
 		for(StellarBody body : subStars) {
@@ -250,9 +279,17 @@ public class StellarBody {
 	public void readFromNBT(NBTTagCompound nbt) {
 		id = nbt.getInteger("id");
 		temperature = nbt.getInteger("temperature");
+		//STARGATEMC
+		this.isRandomGenerated = nbt.getBoolean("isRandomGenerated");
+		this.lastVisit = nbt.getLong("lastVisit");
+		for (String uuid : nbt.getString("visitors").split(":")) {
+			if (uuid == null || uuid.equals("")) continue;
+			this.visitors.add(UUID.fromString(uuid));
+		}
+		this.eventCounter = nbt.getInteger("eventCounter");
 		name = nbt.getString("name");
-		posX = nbt.getShort("posX");
-		posZ = nbt.getShort("posZ");
+		posX = nbt.getInteger("posX");
+		posZ = nbt.getInteger("posZ");
 		isBlackHole = nbt.getBoolean("isBlackHole");
 		
 		if(nbt.hasKey("size"))
@@ -278,4 +315,31 @@ public class StellarBody {
 		//TODO
 		return new SpacePosition();
 	}
+
+	public SystemImportance getSystemImportance() {
+		SystemImportance importance = SystemImportance.getForCounter(this.eventCounter);
+		return importance;
+	}
+
+	public Long getLifeTime() {
+		if (!this.isRandomGenerated) return Long.MAX_VALUE;
+		SystemImportance importance = SystemImportance.getForCounter(this.eventCounter);
+		return (importance.getLifeTime());		
+	}
+
+	public Long getTimeTilDeath() {
+		if (!this.isRandomGenerated) return Long.MAX_VALUE;
+		SystemImportance importance = SystemImportance.getForCounter(this.eventCounter);
+		return (importance.getTimeTilDeath(timeSinceLastVisit()));		
+	}
+
+	public Long timeSinceLastVisit() {
+		return System.currentTimeMillis() - lastVisit;
+	}
+	public boolean shouldBeDestroyed() {
+		if (!this.isRandomGenerated) return false;
+		SystemImportance importance = SystemImportance.getForCounter(this.eventCounter);
+		return (importance.shouldDie(timeSinceLastVisit()));	
+	}
 }
+

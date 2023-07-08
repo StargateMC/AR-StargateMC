@@ -30,7 +30,58 @@ public class WorldProviderSpace extends WorldProviderPlanet {
 	public double getHorizon() {
 		return 0;
 	}
-	
+	@Override
+	public String getSaveFolder() {		
+			switch (this.getDimension()) {
+				case -2:
+					return "Space";
+				case -9000:
+					return "RP_Midway";
+				case -9001:
+					return "RP_Destiny";
+				case -9002:
+					return "RP_Beliskner";
+				case -9003:
+					return "RP_OriMotherShip";
+				case -9004:
+					return "RP_Aurora";
+				case -9005:
+					return "RP_ReplicatorShip";
+				case -9006:
+					return "RP_Daedalus";
+				case -9007:
+					return "RP_Lucian_Alliance_Hatak";
+				case -9008:
+					return "RP_Hive";
+				case -9009:
+					return "RP_HubSpawn";
+				case -9010:
+					return "RP_Apollo";
+				case -9011:
+					return "RP_Odyssey";
+				case -9012:
+					return "RP_Tria";
+				case -9013:
+					return "RP_Tokra_Hatak";
+				case -9014:
+					return "RP_Free_Jaffa_Hatak";
+				case -9015:
+					return "RP_Apophis_Hatak";
+				case -9016:
+					return "RP_Cronus_Hatak";
+				case -9017:
+					return "RP_Baal_Hatak";
+				case -9018:
+					return "RP_Anubis_Hatak";
+				case -9019:
+					return "RP_Lord_Yu_Hatak";
+				case -9020:
+					return "RP_NakaiShip";
+				default:
+					return "ERROR";
+							
+			}
+	}
 	//TODO: figure out celestial angle from coords
 	
 	@Override
