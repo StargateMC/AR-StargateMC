@@ -5,8 +5,12 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.DimensionType;
+import net.minecraft.world.MinecraftException;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
+import net.minecraft.world.WorldServer;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
 
@@ -523,19 +527,28 @@ public class DimensionManager implements IGalaxy {
 		starList.clear();
 		starListByName.clear();
 	}
-
+	public boolean forceUnload(WorldServer worldServer) {
+		if (worldServer == null) return true;
+		worldServer.playerEntities.clear();
+        try {
+            worldServer.saveAllChunks(true, null);
+        } catch (MinecraftException e) {
+            AdvancedRocketry.logger.warn("Caught an exception while saving all chunks for : " + worldServer.provider.getDimension());
+            e.printStackTrace();
+        } finally {
+            AdvancedRocketry.logger.warn("Unloading dimension: " + worldServer.provider.getDimension() + " forcefully.");
+            MinecraftForge.EVENT_BUS.post(new WorldEvent.Unload(worldServer));
+            worldServer.flush();
+            DimensionManager.setWorld(worldServer.provider.getDimension(), null, worldServer.getMinecraftServer());
+			DimensionManager.unregisterDimension(worldServer.provider.getDimension());
+            return true;
+        }
+	}
 	/**
 	 * Deletes and unregisters the dimensions, as well as all child dimensions, from the game
 	 * @param dimId the dimensionId to delete
 	 */
 	public void deleteDimension(int dimId) {
-			if(net.minecraftforge.common.DimensionManager.isDimensionRegistered(dimId)) {
-				if(net.minecraftforge.common.DimensionManager.getWorld(dimId) != null)
-					net.minecraftforge.common.DimensionManager.unloadWorld(dimId);
-
-				net.minecraftforge.common.DimensionManager.unregisterDimension(dimId);
-			}
-
 		DimensionProperties properties = dimensionList.get(dimId);
 		//Can happen in some rare cases
 		if(properties == null)
@@ -560,16 +573,16 @@ public class DimensionManager implements IGalaxy {
 			}
 		}
 
-		//TODO: check for world loaded
-		// If not native to AR let the mod it's registered to handle it
-		if(properties.isNativeDimension ) {
-			if(net.minecraftforge.common.DimensionManager.isDimensionRegistered(dimId)) {
-				if(net.minecraftforge.common.DimensionManager.getWorld(dimId) != null)
-					net.minecraftforge.common.DimensionManager.unloadWorld(dimId);
 
-				net.minecraftforge.common.DimensionManager.unregisterDimension(dimId);
+			if (dimId >= 1) {
+				if(net.minecraftforge.common.DimensionManager.isDimensionRegistered(dimId)) {
+					if(net.minecraftforge.common.DimensionManager.getWorld(dimId) != null)
+						forceUnload((WorldServer)net.minecraftforge.common.DimensionManager.getWorld(dimId));
+				}
+			} else {
+            	AdvancedRocketry.logger.warn("Not unloading dimension: " + dimId + " forcefully. It is an RP or system world.");
+				return;
 			}
-		}
 		dimensionList.remove(dimId);
 		//Delete World Folder
 		File file = new File(net.minecraftforge.common.DimensionManager.getCurrentSaveRootDirectory(), workingPath + "/" + properties.getName());
