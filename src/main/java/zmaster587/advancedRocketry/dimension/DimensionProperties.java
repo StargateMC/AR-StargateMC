@@ -448,6 +448,14 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 
 	public void setStar(int id) {
 		this.starId = id;
+			int length = this.getName().length();
+			String lastTwoChars = this.getName().substring(length - 2);
+			String firstThreeChars = this.getName().substring(0,3);
+			star = DimensionManager.getInstance().getStar((firstThreeChars + "SOL0" + lastTwoChars));
+			if (star != null) {
+				starId = star.getId();
+				id = star.getId();
+			}
 		if(DimensionManager.getInstance().getStar(id) != null)
 			setStar(DimensionManager.getInstance().getStar(id));
 	}
