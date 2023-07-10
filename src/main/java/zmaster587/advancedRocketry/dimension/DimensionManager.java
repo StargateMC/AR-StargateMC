@@ -539,8 +539,8 @@ public class DimensionManager implements IGalaxy {
             AdvancedRocketry.logger.warn("Unloading dimension: " + worldServer.provider.getDimension() + " forcefully.");
             MinecraftForge.EVENT_BUS.post(new WorldEvent.Unload(worldServer));
             worldServer.flush();
-            DimensionManager.setWorld(worldServer.provider.getDimension(), null, worldServer.getMinecraftServer());
-			DimensionManager.unregisterDimension(worldServer.provider.getDimension());
+            net.minecraftforge.common.DimensionManager.setWorld(worldServer.provider.getDimension(), null, worldServer.getMinecraftServer());
+			net.minecraftforge.common.DimensionManager.unregisterDimension(worldServer.provider.getDimension());
             return true;
         }
 	}
