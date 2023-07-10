@@ -212,6 +212,7 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 
 
 
+	private String starName;
 	//True if dimension is managed and created by AR (false otherwise)
 	public boolean isNativeDimension;
 	public boolean skyRenderOverride;
@@ -442,6 +443,7 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 	public void setStar(StellarBody star) {
 		this.starId = star.getId();
 		this.star = star;
+		this.starName = star.getName();
 		if(!this.isMoon() && !isStation())
 			this.star.addPlanet(this);
 	}
@@ -455,9 +457,11 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 			if (star != null) {
 				starId = star.getId();
 				id = star.getId();
+				this.starName = star.getName();
 			}
-		if(DimensionManager.getInstance().getStar(id) != null)
+		if(DimensionManager.getInstance().getStar(id) != null) {			
 			setStar(DimensionManager.getInstance().getStar(id));
+		}
 	}
 
 	/**
@@ -1413,6 +1417,9 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 	public void readFromNBT(NBTTagCompound nbt) {
 		NBTTagList list;
 
+		if (nbt.hasKey("starName")) {
+			starName = nbt.getString("starName");
+		}
 		if(nbt.hasKey("skyColor")) {
 			list = nbt.getTagList("skyColor", NBT.TAG_FLOAT);
 			skyColor = new float[list.tagCount()];
@@ -1745,6 +1752,7 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 		}
 
 		nbt.setInteger("starId", starId);
+		nbt.setString("starName", getStar().getName());
 		nbt.setFloat("gravitationalMultiplier", gravitationalMultiplier);
 		nbt.setInteger("orbitalDist", orbitalDist);
 		nbt.setDouble("orbitTheta", orbitTheta);
