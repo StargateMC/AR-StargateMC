@@ -968,7 +968,7 @@ public class DimensionManager implements IGalaxy {
 
 				for(DimensionProperties properties : dimCouplingList.dims) {
 					DimensionManager.getInstance().registerDimNoUpdate(properties, properties.isNativeDimension);
-					properties.setStar(properties.getStarId());
+					properties.setStar(properties.getStarName());
 				}
 
 				for(StellarBody star : dimCouplingList.stars) {

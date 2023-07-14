@@ -448,9 +448,15 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 			this.star.addPlanet(this);
 	}
 
+	public void setStar(String name) {
+		this.starName = name;
+		if(DimensionManager.getInstance().getStar(starName) != null) {			
+			setStar(DimensionManager.getInstance().getStar(starName));
+		}
+	}
 	public void setStar(int id) {
 		this.starId = id;
-			star = DimensionManager.getInstance().getStar(starName);
+			star = DimensionManager.getInstance().getStar(starId);
 			if (star != null) {
 				starId = star.getId();
 				id = star.getId();
@@ -1897,7 +1903,9 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 
 		return new double[] {orbitalDistance*Math.cos(theta), orbitalDistance*Math.sin(phi), orbitalDistance*Math.sin(theta)};
 	}
-	
+	public String getStarName() {
+		return starName;
+	}
 	public int getStarId() {
 		return starId;
 	}
