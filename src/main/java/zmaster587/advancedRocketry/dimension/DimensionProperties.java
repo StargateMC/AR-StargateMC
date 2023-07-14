@@ -475,6 +475,10 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 			return getStarData();
 		if(star == null)
 			star = DimensionManager.getInstance().getStar(starName);
+		if(star == null) {
+			AdvancedRocketry.logger.info("Lookup by name failed for: " + this.getName() + " for star: " + starName + ", obtaining by starId: " + starId);
+			star = DimensionManager.getInstance().getStar(starId);
+		}
 		return star;
 	}
 
