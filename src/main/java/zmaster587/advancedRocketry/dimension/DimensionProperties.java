@@ -468,7 +468,7 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 		if(isStar())
 			return getStarData();
 		if(star == null)
-			star = DimensionManager.getInstance().getStar(starId);
+			star = DimensionManager.getInstance().getStar(starName);
 		return star;
 	}
 
