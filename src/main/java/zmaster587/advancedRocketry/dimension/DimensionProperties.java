@@ -1575,7 +1575,7 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 
 		//Note: parent planet must be set before setting the star otherwise it would cause duplicate planets in the StellarBody's array
 		parentPlanet = nbt.getInteger("parentPlanet");
-		this.setStar(DimensionManager.getInstance().getStar(nbt.getInteger("starId")));
+		this.setStar(DimensionManager.getInstance().getStar(nbt.getString("starName")));
 
 		if(isGasGiant) {
 			NBTTagList fluidList = nbt.getTagList("fluids", NBT.TAG_STRING);
@@ -1755,7 +1755,7 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 		}
 
 		nbt.setInteger("starId", starId);
-		nbt.setString("starName", getStar().getName());
+		nbt.setString("starName", starName);
 		nbt.setFloat("gravitationalMultiplier", gravitationalMultiplier);
 		nbt.setInteger("orbitalDist", orbitalDist);
 		nbt.setDouble("orbitTheta", orbitTheta);

@@ -667,7 +667,7 @@ public class XMLPlanetLoader {
 		}
 
 		//Star may not be registered at this time, use ID version instead
-		properties.setStar(star.getId());
+		properties.setStar(star.getName());
 		
 		//Set temperature
 		properties.averageTemperature = AstronomicalBodyHelper.getAverageTemperature(star, properties.getSolarOrbitalDistance(), properties.getAtmosphereDensity());
