@@ -1,9 +1,6 @@
-import com.matthewprenger.cursegradle.CurseArtifact
-import com.matthewprenger.cursegradle.CurseProject
-import com.matthewprenger.cursegradle.CurseRelation
+
 import org.ajoberstar.grgit.Grgit
 import org.gradle.internal.jvm.Jvm
-import se.bjurr.gitchangelog.plugin.gradle.GitChangelogTask
 import java.util.Date
 import java.text.SimpleDateFormat
 import java.util.TimeZone
@@ -13,8 +10,6 @@ plugins {
     id("net.minecraftforge.gradle") version "5.1.+"
     id("wtf.gofancy.fancygradle") version "1.1.+"
     id("org.ajoberstar.grgit") version "4.1.1"
-    id("com.matthewprenger.cursegradle") version "1.4.0"
-    id("se.bjurr.gitchangelog.git-changelog-gradle-plugin") version "1.72.0"
     `maven-publish`
 }
 
@@ -223,60 +218,6 @@ tasks.build {
     dependsOn(deobfJar)
 }
 
-val makeChangelog by tasks.creating(GitChangelogTask::class.java) {
-    file = file("changelog.html")
-    untaggedName = "Current release ${project.version}"
-
-    //Get the last commit from the cache or config if no cache exists
-    val lastHashFile = file("lasthash.txt")
-
-    fromCommit = if (!lastHashFile.exists())
-        startGitRev
-    else
-        lastHashFile.readText()
-
-    lastHashFile.writeText(gitHash)
-
-    toRef = "HEAD"
-    gitHubIssuePattern = "nonada123";
-    templateContent = """
-        {{#tags}}
-          <h3>{{name}}</h3>
-          <ul>
-            {{#commits}}
-            <li> <a href="https://github.com/zmaster587/AdvancedRocketry/commit/{{hash}}" target=_blank> {{{message}}}</a>
-        </li>
-            {{/commits}}
-          </ul>
-        {{/tags}}
-    """.trimIndent()
-}
-
-curseforge {
-    apiKey = (project.findProperty("thecursedkey") as String?).orEmpty()
-
-    project(closureOf<CurseProject> {
-        id = "236542"
-        relations(closureOf<CurseRelation> {
-            requiredDependency("libvulpes")
-        })
-        changelog = file("changelog.html")
-        changelogType = "html"
-        // Why is it hardcoded to beta tho?..
-        releaseType = "release"
-        addGameVersion(mcVersion)
-        mainArtifact(tasks.jar.get(), closureOf<CurseArtifact> {
-            displayName = "AdvancedRocketry ${ project.version } build $buildNumber for $mcVersion"
-            })
-        addArtifact(deobfJar.get(), closureOf<CurseArtifact> {
-            displayName = "AdvancedRocketry ${ project.version }-deobf build $buildNumber for $mcVersion"
-        })
-    })
-}
-
-tasks.curseforge {
-    dependsOn(makeChangelog)
-}
 
 publishing {
     repositories {
@@ -293,18 +234,10 @@ publishing {
 
             artifact(tasks.jar.get())
             artifact(deobfJar.get())
-            artifact(makeChangelog.file)
         }
     }
 }
 
-tasks.curseforge {
-  dependsOn("reobfJar")
-}
-
-tasks.publish {
-    dependsOn(makeChangelog)
-}
 
 idea {
     module {
