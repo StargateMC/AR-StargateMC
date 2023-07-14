@@ -1086,16 +1086,18 @@ public class DimensionManager implements IGalaxy {
 		if(dimCouplingList != null) {
 			//Register new stars
 			for(StellarBody star : dimCouplingList.stars) {
-				if(DimensionManager.getInstance().getStar(star.getId()) == null)
+				if(DimensionManager.getInstance().getStar(star.getName()) == null) {
+					DimensionManager.getInstance().getStar(star.getId()).setId(DimensionManager.getInstance().getNextFreeStarId());
 					DimensionManager.getInstance().addStar(star);
+				}
 
-				DimensionManager.getInstance().getStar(star.getId()).setName(star.getName());
-				DimensionManager.getInstance().getStar(star.getId()).setPosX(star.getPosX());
-				DimensionManager.getInstance().getStar(star.getId()).setPosZ(star.getPosZ());
-				DimensionManager.getInstance().getStar(star.getId()).setSize(star.getSize());
-				DimensionManager.getInstance().getStar(star.getId()).setTemperature(star.getTemperature());
-				DimensionManager.getInstance().getStar(star.getId()).subStars = star.subStars;
-				DimensionManager.getInstance().getStar(star.getId()).setBlackHole(star.isBlackHole());
+				DimensionManager.getInstance().getStar(star.getName()).setName(star.getName());
+				DimensionManager.getInstance().getStar(star.getName()).setPosX(star.getPosX());
+				DimensionManager.getInstance().getStar(star.getName()).setPosZ(star.getPosZ());
+				DimensionManager.getInstance().getStar(star.getName()).setSize(star.getSize());
+				DimensionManager.getInstance().getStar(star.getName()).setTemperature(star.getTemperature());
+				DimensionManager.getInstance().getStar(star.getName()).subStars = star.subStars;
+				DimensionManager.getInstance().getStar(star.getName()).setBlackHole(star.isBlackHole());
 			}
 
 			for(DimensionProperties properties : dimCouplingList.dims) {
@@ -1104,7 +1106,7 @@ public class DimensionManager implements IGalaxy {
 				if(!properties.isNativeDimension && properties.getStar() != null && !DimensionManager.getInstance().isDimensionCreated(properties.getId())) {
 					for(StellarBody star : dimCouplingList.stars) {
 						for(StellarBody loadedStar : DimensionManager.getInstance().getStars()) {
-							if(star.getId() == properties.getStarId() && star.getName().equals(loadedStar.getName())) {
+							if(star.getName().equals(loadedStar.getName())) {
 								DimensionManager.getInstance().registerDimNoUpdate(properties, false);
 								properties.setStar(loadedStar);
 							}
