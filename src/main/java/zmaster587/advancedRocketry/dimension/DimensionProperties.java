@@ -491,7 +491,7 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 	}
 	
 	public StellarBody getStarData() {
-		return DimensionManager.getInstance().getStar(planetId - Constants.STAR_ID_OFFSET);
+		return DimensionManager.getInstance().getStar(starName);
 	}
 
 	public void setGasGiant(boolean gas) {
