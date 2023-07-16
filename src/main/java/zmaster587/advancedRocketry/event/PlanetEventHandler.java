@@ -201,7 +201,7 @@ public class PlanetEventHandler {
 				event.getEntity().setPositionAndUpdate(teleportPosition.x, teleportPosition.y, teleportPosition.z);
 			} else {
 				event.getEntity().sendMessage(new TextComponentString(LibVulpes.proxy.getLocalizedString("msg.chat.nostation3")));
-				event.getEntity().getServer().getPlayerList().transferPlayerToDimension((EntityPlayerMP)event.getEntity(), 0, new TeleporterNoPortal( net.minecraftforge.common.DimensionManager.getWorld(0) ));
+				//event.getEntity().getServer().getPlayerList().transferPlayerToDimension((EntityPlayerMP)event.getEntity(), 0, new TeleporterNoPortal( net.minecraftforge.common.DimensionManager.getWorld(0) ));
 			}
 
 		}
