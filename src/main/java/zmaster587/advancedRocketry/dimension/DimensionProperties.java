@@ -1757,7 +1757,7 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 			}
 			nbt.setTag("artifacts",list);
 		}
-
+		if (starName == null) starName = getStar().getName();
 		nbt.setInteger("starId", starId);
 		nbt.setString("starName", starName);
 		nbt.setFloat("gravitationalMultiplier", gravitationalMultiplier);
