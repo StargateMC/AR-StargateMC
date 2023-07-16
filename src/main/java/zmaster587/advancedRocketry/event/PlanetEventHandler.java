@@ -181,7 +181,7 @@ public class PlanetEventHandler {
 				ARAdvancements.WENT_TO_THE_MOON.trigger((EntityPlayerMP)event.getEntity());
 			}
 		}
-
+		if (event.getEntity().world.provider.getDimension() < 0) return; // Bypass for RP worlds.
 		if(event.getEntity() instanceof EntityPlayer && event.getEntity().world.provider.getDimension() == ARConfiguration.getCurrentConfig().spaceDimId && SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(event.getEntity().getPosition()) == null && !(event.getEntity().getRidingEntity() instanceof EntityRocket)) {
 			double distance = 0;
 			HashedBlockPosition teleportPosition = null;
