@@ -57,6 +57,9 @@ public class ARIntegration {
                 substar.setTemperature(r.nextInt(199) + 1);
                 substar.setStarSeparation((extraStars * 10) + ((r.nextInt(10))));
                 substar.setBlackHole((r.nextFloat() == 0.5));
+                randomValue = r.nextFloat();
+                randomFloat = minValue + (randomValue * (maxValue - minValue));
+                star.setSize(randomFloat);
                 star.addSubStar(substar);
                 extraStars--;
             }
