@@ -37,6 +37,14 @@ public class ARIntegration {
         StellarBody star = new StellarBody();
         Random r = new Random();
         star.setTemperature(r.nextInt(199) + 1);
+        // Calculate a random float between 0.1 and 10.0
+        float minValue = 0.1f;
+        float maxValue = 10.0f;
+        // The formula to calculate the random float is:
+        // randomFloat = minValue + (randomValue * (maxValue - minValue))
+        float randomValue = r.nextFloat();
+        float randomFloat = minValue + (randomValue * (maxValue - minValue));
+        star.setSize(randomFloat);
         ArrayList<Integer> coords = galaxy.getRandomStellarCoordinates();
         star.setPosX(coords.get(0));
         star.setPosZ(coords.get(1));
