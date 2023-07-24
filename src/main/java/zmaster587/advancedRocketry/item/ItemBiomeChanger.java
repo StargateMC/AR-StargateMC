@@ -78,7 +78,11 @@ public class ItemBiomeChanger extends ItemSatelliteIdentificationChip implements
 			list.add(LibVulpes.proxy.getLocalizedString("msg.biomechanger.nosat"));
 		else if(mapping.getDimensionId() == player.provider.getDimension()) {
 			list.add(LibVulpes.proxy.getLocalizedString("msg.connected"));
-			list.add(LibVulpes.proxy.getLocalizedString("msg.biomechanger.selBiome") + mapping.getBiome().getBiomeName());
+			try {
+				list.add(LibVulpes.proxy.getLocalizedString("msg.biomechanger.selBiome") + mapping.getBiome().getBiomeName());
+			} catch (Exception e) {
+				list.add(LibVulpes.proxy.getLocalizedString("msg.biomechanger.selBiome") + "Error getting biome name, biome is null: " + ((mapping.getBiome() == null)));				
+			}
 			list.add(LibVulpes.proxy.getLocalizedString("msg.biomechanger.numBiome") + mapping.discoveredBiomes().size());
 		}
 		else
