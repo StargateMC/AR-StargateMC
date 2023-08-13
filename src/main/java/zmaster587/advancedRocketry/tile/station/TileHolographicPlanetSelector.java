@@ -29,6 +29,35 @@ import zmaster587.libVulpes.util.ZUtils.RedstoneState;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ITickable;
+import net.minecraft.util.math.MathHelper;
+import net.minecraftforge.fml.relauncher.Side;
+import zmaster587.advancedRocketry.api.Constants;
+import zmaster587.advancedRocketry.api.dimension.IDimensionProperties;
+import zmaster587.advancedRocketry.api.dimension.solar.StellarBody;
+import zmaster587.advancedRocketry.api.stations.ISpaceObject;
+import zmaster587.advancedRocketry.dimension.DimensionManager;
+import zmaster587.advancedRocketry.dimension.DimensionProperties;
+import zmaster587.advancedRocketry.entity.EntityUIButton;
+import zmaster587.advancedRocketry.entity.EntityUIPlanet;
+import zmaster587.advancedRocketry.entity.EntityUIStar;
+import zmaster587.advancedRocketry.inventory.TextureResources;
+import zmaster587.advancedRocketry.stations.SpaceObjectManager;
+import zmaster587.libVulpes.LibVulpes;
+import zmaster587.libVulpes.inventory.modules.*;
+import zmaster587.libVulpes.network.PacketHandler;
+import zmaster587.libVulpes.network.PacketMachine;
+import zmaster587.libVulpes.util.INetworkMachine;
+import zmaster587.libVulpes.util.ZUtils.RedstoneState;
+import net.minecraft.util.math.BlockPos;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 
 public class TileHolographicPlanetSelector extends TileEntity implements ITickable,IButtonInventory, IModularInventory, ISliderBar, INetworkMachine {
 
@@ -100,7 +129,18 @@ public class TileHolographicPlanetSelector extends TileEntity implements ITickab
 		boolean powered = world.isBlockIndirectlyGettingPowered(getPos()) > 0;
 		return (!powered && state == RedstoneState.INVERTED) || (powered && state == RedstoneState.ON) || state == RedstoneState.OFF;
 	}
-
+        public StellarBody getCurrentStar() {
+            try {
+                return DimensionManager.getEffectiveDimId(this.world, this.getPos()).getStar();
+            } catch (Exception e) {
+                try {
+                    return DimensionManager.getEffectiveDimId(-102, new BlockPos(0,0,0)).getStar();
+                } catch (Exception ex) {
+                    return null;
+                }
+            }
+            
+        }
 	@Override
 	public void update() {
 		if(!world.isRemote) {
@@ -118,9 +158,49 @@ public class TileHolographicPlanetSelector extends TileEntity implements ITickab
 					}
 
 					if(stellarMode) {
+                        Random r = new Random();
 						for(EntityUIStar entity : starEntities) {
-							entity.setPosition(this.pos.getX() + .5 + getInterpHologramSize()*entity.getStarProperties().getPosX()/100f, this.pos.getY() + 1, this.pos.getZ() + .5 + getInterpHologramSize()*entity.getStarProperties().getPosZ()/100f);
-							entity.setScale(getInterpHologramSize());
+                                                    double equivX = entity.getStarProperties().getPosX();
+                                                    double equivZ = entity.getStarProperties().getPosZ();
+                                                    double equivY = 1;
+                                                    
+                                                    while (equivX > 500) equivX -= 1000;
+                                                    while (equivZ > 500) equivZ -= 1000;
+                                                    while (equivX < -500) equivX += 1000;
+                                                    while (equivZ < -500) equivZ += 1000;
+                                                    if (this.getCurrentStar() != null) {
+                                                        if (!this.getCurrentStar().getName().substring(7,9).equals(entity.getStarProperties().getName().substring(7,9))) {
+                                                            equivX /= 2; // Halve display size of other galaxies.
+                                                            equivZ /= 2;
+                                                            if (this.getCurrentStar().getPosX() > entity.getStarProperties().getPosX()) {
+                                                                equivX -= 500;
+                                                            } else {
+                                                                equivX += 500;
+                                                            }
+                                                            if (this.getCurrentStar().getPosZ() > entity.getStarProperties().getPosZ()) {
+                                                                equivZ -= 500;
+                                                            } else {
+                                                                equivZ += 500;
+                                                            }
+                                                            try {
+                                                                equivY = 3;
+                                                            } catch (Exception e) {
+                                                                equivY += 30;
+                                                            }
+                                                        }
+                                                    } else {
+                                                        if (entity.getStarProperties().getName().endsWith("ML")) equivY = 3;
+                                                        if (entity.getStarProperties().getName().endsWith("OL")) equivY = 5;
+                                                        if (entity.getStarProperties().getName().endsWith("IL")) equivY = 7;
+                                                        if (entity.getStarProperties().getName().endsWith("HO")) equivY = 9;
+                                                        if (entity.getStarProperties().getName().endsWith("1D")) equivY = 11;
+                                                        float randomY = r.nextFloat();
+                                                        if (r.nextBoolean()) randomY *= -1;
+                                                        equivY += randomY;
+                                                    }
+                                                    
+                                                    entity.setPosition(this.pos.getX() + .5 + getInterpHologramSize()*equivX/100f, this.pos.getY() + equivY, this.pos.getZ() + .5 + getInterpHologramSize()*equivZ/100f);
+                                                    entity.setScale(getInterpHologramSize());
 						}
 					}
 					else {
