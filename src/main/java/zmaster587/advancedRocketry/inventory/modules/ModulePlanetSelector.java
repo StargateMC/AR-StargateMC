@@ -503,7 +503,12 @@ public class ModulePlanetSelector extends ModuleContainerPan implements IButtonI
 						//if the star was the current system then go to stellar view
 						stellarView = true;
 					}
-					currentSystem = properties.getStar().getId() + Constants.STAR_ID_OFFSET;
+					try {
+						currentSystem = properties.getStar().getId() + Constants.STAR_ID_OFFSET;
+					} catch {
+						currentSystem = DimensionManager.getInstance().getDimensionProperties(-102).getStar().getId();
+						Logger.warn("Setting star to : " + currentSystem + " due to losing track of the previous star ID!");
+					}
 				}
 
 				currentSystemChanged=true;
