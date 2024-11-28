@@ -505,7 +505,7 @@ public class ModulePlanetSelector extends ModuleContainerPan implements IButtonI
 					}
 					try {
 						currentSystem = properties.getStar().getId() + Constants.STAR_ID_OFFSET;
-					} catch {
+					} catch (Exception e) {
 						currentSystem = DimensionManager.getInstance().getDimensionProperties(-102).getStar().getId();
 						Logger.warn("Setting star to : " + currentSystem + " due to losing track of the previous star ID!");
 					}
