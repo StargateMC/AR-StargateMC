@@ -1,0 +1,43 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern":
+    [
+	"oso",
+	"lbr",
+	"oxo"
+    ],
+    "key":
+    {
+        "s":
+        {
+            "item": "libvulpes:linker"
+        },
+        "o":
+        {
+		"item": "advancedrocketry:ic",
+		"data": 3
+        },
+	"b":
+        {
+            "item": "libvulpes:structuremachine"
+        },
+	"l":
+        {
+	    "type": "forge:ore_dict",
+            "ore": "plateGold"
+        },
+	"r":
+        {
+		"item": "minecraft:redstone"
+        },
+	"x":
+        {
+		"item": "minecraft:air"
+        }
+    },
+    "result":
+    {
+        "item": "advancedrocketry:terraformingterminal",
+        "count": 1
+    }
+}

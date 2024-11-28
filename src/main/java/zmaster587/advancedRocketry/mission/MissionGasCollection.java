@@ -10,7 +10,6 @@ import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
-import net.minecraftforge.fluids.capability.IFluidHandler;
 import zmaster587.advancedRocketry.api.ARConfiguration;
 import zmaster587.advancedRocketry.api.IInfrastructure;
 import zmaster587.advancedRocketry.api.fuel.FuelRegistry;
@@ -24,76 +23,78 @@ import java.util.LinkedList;
 public class MissionGasCollection extends MissionResourceCollection {
 
 
-	private Fluid gasFluid;
-	public MissionGasCollection() {
-		super();
-	}
+    private Fluid gasFluid;
 
-	public MissionGasCollection(long l, EntityRocket entityRocket, LinkedList<IInfrastructure> connectedInfrastructure, Fluid gasFluid) {
-		super((long) (l*ARConfiguration.getCurrentConfig().gasCollectionMult), entityRocket, connectedInfrastructure);
-		this.gasFluid = gasFluid;
-	}
+    public MissionGasCollection() {
+        super();
+    }
 
-	@Override
-	public String getName() {
-		return LibVulpes.proxy.getLocalizedString("mission.gascollection.name");
-	}
+    public MissionGasCollection(long l, EntityRocket entityRocket, LinkedList<IInfrastructure> connectedInfrastructure, Fluid gasFluid) {
+        super((long) (l * ARConfiguration.getCurrentConfig().gasCollectionMult), entityRocket, connectedInfrastructure);
+        this.gasFluid = gasFluid;
+    }
 
-	@Override
-	public void onMissionComplete() {
+    @Override
+    public String getName() {
+        return LibVulpes.proxy.getLocalizedString("mission.gascollection.name");
+    }
 
-		if((int)rocketStats.getStatTag("intakePower") > 0 && gasFluid != null) {
-			Fluid type = gasFluid;//FluidRegistry.getFluid("hydrogen");
-			//Fill gas tanks
-			for(TileEntity tile : this.rocketStorage.getFluidTiles()) {
-				tile.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null).fill(new FluidStack(type, 64000), true);
-			}
-		}
+    @Override
+    public void onMissionComplete() {
 
-		World world = DimensionManager.getWorld(launchDimension);
-		if (world == null)
-		{
-			DimensionManager.initDimension(launchDimension);
-			world = DimensionManager.getWorld(launchDimension);
-		}
-		
-		EntityStationDeployedRocket rocket = new EntityStationDeployedRocket(world, rocketStorage, rocketStats, x, y, z);
 
-		FuelRegistry.FuelType fuelType = rocket.getRocketFuelType();
-		if(fuelType != null) {
-			rocket.setFuelAmount(fuelType, 0);
-			if (fuelType == FuelRegistry.FuelType.LIQUID_BIPROPELLANT)
-				rocket.setFuelAmount(FuelRegistry.FuelType.LIQUID_OXIDIZER, 0);
-		}
-		rocket.readMissionPersistentNBT(missionPersistantNBT);
+        if ((int) rocketStats.getStatTag("intakePower") > 0 && gasFluid != null) {
+            Fluid type = gasFluid;//FluidRegistry.getFluid("hydrogen");
+            //Fill gas tanks
+            for (TileEntity tile : this.rocketStorage.getFluidTiles()) {
+                tile.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null).fill(new FluidStack(type, 64000), true);
+            }
+        }
 
-		EnumFacing dir = rocket.forwardDirection;
-		rocket.forceSpawn = true;
+        World world = DimensionManager.getWorld(launchDimension);
+        if (world == null) {
+            DimensionManager.initDimension(launchDimension);
+            world = DimensionManager.getWorld(launchDimension);
+        }
 
-		rocket.setPosition(dir.getFrontOffsetX()*64d + rocket.launchLocation.x + (rocketStorage.getSizeX() % 2 == 0 ? 0 : 0.5d), y, dir.getFrontOffsetZ()*64d + rocket.launchLocation.z + (rocketStorage.getSizeZ() % 2 == 0 ? 0 : 0.5d));
-		world.spawnEntity(rocket);
-		rocket.setInOrbit(true);
-		rocket.setInFlight(true);
-		//rocket.motionY = -1.0;
+        EntityStationDeployedRocket rocket = new EntityStationDeployedRocket(world, rocketStorage, rocketStats, x, y, z);
 
-		for(HashedBlockPosition i : infrastructureCoords) {
-			TileEntity tile = world.getTileEntity(new BlockPos(i.x, i.y, i.z));
-			if(tile instanceof IInfrastructure) {
-				((IInfrastructure)tile).unlinkMission();
-				rocket.linkInfrastructure(((IInfrastructure)tile));
-			}
-		}
-	}
-	
-	@Override
-	public void writeToNBT(NBTTagCompound nbt) {
-		super.writeToNBT(nbt);
-		nbt.setString("gas", gasFluid.getName());
-	}
-	
-	@Override
-	public void readFromNBT(NBTTagCompound nbt) {
-		super.readFromNBT(nbt);
-		gasFluid = FluidRegistry.getFluid(nbt.getString("gas"));
-	}
+        FuelRegistry.FuelType fuelType = rocket.getRocketFuelType();
+        //System.out.println("Fuel:"+ rocketStats.getFuelAmount(fuelType));
+        if (fuelType != null) {
+            rocket.setFuelAmount(fuelType, Math.max(rocketStats.getFuelAmount(fuelType)-1000,0));
+            if (fuelType == FuelRegistry.FuelType.LIQUID_BIPROPELLANT)
+                rocket.setFuelAmount(FuelRegistry.FuelType.LIQUID_OXIDIZER, Math.max(rocketStats.getFuelAmount(FuelRegistry.FuelType.LIQUID_OXIDIZER)-1000,0));
+        }
+        rocket.readMissionPersistentNBT(missionPersistantNBT);
+
+        EnumFacing dir = rocket.forwardDirection;
+        rocket.forceSpawn = true;
+
+        rocket.setPosition(dir.getFrontOffsetX() * 64d + rocket.launchLocation.x + (rocketStorage.getSizeX() % 2 == 0 ? 0 : 0.5d), y, dir.getFrontOffsetZ() * 64d + rocket.launchLocation.z + (rocketStorage.getSizeZ() % 2 == 0 ? 0 : 0.5d));
+        world.spawnEntity(rocket);
+        rocket.setInOrbit(true);
+        rocket.setInFlight(true);
+        //rocket.motionY = -1.0;
+
+        for (HashedBlockPosition i : infrastructureCoords) {
+            TileEntity tile = world.getTileEntity(new BlockPos(i.x, i.y, i.z));
+            if (tile instanceof IInfrastructure) {
+                ((IInfrastructure) tile).unlinkMission();
+                rocket.linkInfrastructure(((IInfrastructure) tile));
+            }
+        }
+    }
+
+    @Override
+    public void writeToNBT(NBTTagCompound nbt) {
+        super.writeToNBT(nbt);
+        nbt.setString("gas", gasFluid.getName());
+    }
+
+    @Override
+    public void readFromNBT(NBTTagCompound nbt) {
+        super.readFromNBT(nbt);
+        gasFluid = FluidRegistry.getFluid(nbt.getString("gas"));
+    }
 }

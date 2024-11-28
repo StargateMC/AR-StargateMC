@@ -5,7 +5,7 @@
   "description": "A space mod for minecraft, adds planets, rockets, and some machines",
   "version": "${advRocketryVersion}",
   "mcversion": "${mcVersion}",
-  "url": "http://minecraft.curseforge.com/projects/advanced-rocketry",
+  "url": "https://www.curseforge.com/minecraft/mc-mods/advanced-rocketry-2",
   "updateUrl": "",
   "authorList": ["zmaster587"],
   "credits": "",

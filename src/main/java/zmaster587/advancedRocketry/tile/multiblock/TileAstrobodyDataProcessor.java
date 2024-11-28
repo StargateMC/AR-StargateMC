@@ -9,6 +9,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -28,6 +29,7 @@ import zmaster587.libVulpes.inventory.modules.*;
 import zmaster587.libVulpes.network.PacketHandler;
 import zmaster587.libVulpes.network.PacketMachine;
 import zmaster587.libVulpes.tile.multiblock.TileMultiPowerConsumer;
+import zmaster587.libVulpes.tile.multiblock.TileMultiblockMachine;
 import zmaster587.libVulpes.tile.multiblock.hatch.TileInputHatch;
 import zmaster587.libVulpes.tile.multiblock.hatch.TileInventoryHatch;
 import zmaster587.libVulpes.tile.multiblock.hatch.TileOutputHatch;
@@ -40,347 +42,387 @@ import java.util.List;
 
 public class TileAstrobodyDataProcessor extends TileMultiPowerConsumer implements IModularInventory, IInventory {
 
-	private static final Object[][][] structure = new Object[][][]{
-		{{"slab", 'c', "slab"},
-			{"slab", "slab", "slab"}},
+    private static final Object[][][] structure = new Object[][][]{
+            {{"slab", 'c', "slab"},
+                    {"slab", "slab", "slab"}},
 
-			{{'P','I', 'O'},
-				{'D','D','D'}}
-	};
+            {{'P', 'I', 'O'},
+                    {'D', 'D', 'D'}}
+    };
+    private static final int maxResearchTime = 10;
+    private TileDataBus[] dataCables;
+    private boolean researchingDistance, researchingAtmosphere, researchingMass;
+    private int atmosphereProgress, distanceProgress, massProgress;
+    private EmbeddedInventory inventory;
+    private TileInventoryHatch inputHatch, outputHatch;
+    private boolean waspoweredlasttick;
+
+    public TileAstrobodyDataProcessor() {
+        dataCables = new TileDataBus[3];
+        powerPerTick = 100;
+        massProgress = distanceProgress = atmosphereProgress = -1;
+        inventory = new EmbeddedInventory(1);
+    }
+
+    @Override
+    public List<BlockMeta> getAllowableWildCardBlocks() {
+        List<BlockMeta> list = super.getAllowableWildCardBlocks();
+        list.add(new BlockMeta(Blocks.IRON_BLOCK, BlockMeta.WILDCARD));
+        return list;
+    }
+
+    @Override
+    public boolean shouldHideBlock(World world, BlockPos pos2, IBlockState tile) {
+        return true;
+    }
+
+    @Override
+    protected void integrateTile(TileEntity tile) {
+        super.integrateTile(tile);
+
+        if (tile instanceof TileDataBus) {
+            for (int i = 0; i < dataCables.length; i++) {
+                if (dataCables[i] == null) {
+                    dataCables[i] = (TileDataBus) tile;
+
+                    switch (i) {
+                        case 0:
+                            dataCables[i].lockData(DataStorage.DataType.COMPOSITION);
+                            break;
+                        case 1:
+                            dataCables[i].lockData(DataStorage.DataType.DISTANCE);
+                            break;
+                        case 2:
+                            dataCables[i].lockData(DataStorage.DataType.MASS);
+                    }
+                    break;
+                }
+            }
+        } else if (tile instanceof TileInputHatch) {
+            inputHatch = (TileInventoryHatch) tile;
+
+        } else if (tile instanceof TileOutputHatch) {
+            outputHatch = (TileInventoryHatch) tile;
+        }
+    }
+
+    @Override
+    public void deconstructMultiBlock(World world, BlockPos destroyedPos, boolean blockBroken, IBlockState state) {
+
+        //Make sure to unlock the data cables
+        for (TileDataBus dataCable : dataCables) {
+            if (dataCable != null)
+                dataCable.lockData(null);
+        }
+
+        super.deconstructMultiBlock(world, destroyedPos,
+                blockBroken, state);
+    }
+
+    @Override
+    public void resetCache() {
+        super.resetCache();
+        Arrays.fill(dataCables, null);
+        inputHatch = null;
+        outputHatch = null;
+    }
+
+    @Override
+    public Object[][][] getStructure() {
+        return structure;
+    }
+
+    @Override
+    public String getMachineName() {
+        return AdvancedRocketryBlocks.blockPlanetAnalyser.getLocalizedName();
+    }
+
+    @Override
+    @Nonnull
+    public AxisAlignedBB getRenderBoundingBox() {
+
+        return new AxisAlignedBB(pos.add(-2, -2, -2), pos.add(2, 2, 2));
+    }
+
+    @Override
+    public void onInventoryUpdated() {
+
+        super.onInventoryUpdated();
+        if (inputHatch == null)
+            return;
+
+        if (getStackInSlot(0) == ItemStack.EMPTY) {
+            for (int j = 0; j < inputHatch.getSizeInventory(); j++) {
+                ItemStack stack2 = inputHatch.getStackInSlot(j);
+                if (!stack2.isEmpty() && stack2.getItem() instanceof ItemAsteroidChip && ((ItemAsteroidChip) stack2.getItem()).getUUID(stack2) != null) {
+                    setInventorySlotContents(0, inputHatch.decrStackSize(j, 1));
+                    break;
+                }
+            }
+        }
+        attemptAllResearchStart();
+    }
+
+    @Override
+    protected void processComplete() {
+        if (!world.isRemote) {
+            //Move chip to output
+            for (int i = 0; i < outputHatch.getSizeInventory(); i++) {
+                if (outputHatch.getStackInSlot(i) == ItemStack.EMPTY) {
+                    outputHatch.setInventorySlotContents(i, this.decrStackSize(0, 1));
+                    return;
+                }
+            }
+        }
+    }
+
+    @Override
+    public boolean completeStructure(IBlockState state) {
+        boolean result = super.completeStructure(state);
+        ((BlockMultiblockMachine) world.getBlockState(pos).getBlock()).setBlockState(world, world.getBlockState(pos), pos, result);
+        return result;
+    }
+
+    private void incrementDataOnChip(int amount, DataStorage.DataType dataType) {
+        ItemStack stack = getStackInSlot(0);
+        if (!stack.isEmpty() && stack.getItem().equals(AdvancedRocketryItems.itemAsteroidChip)) {
+            ItemAsteroidChip item = (ItemAsteroidChip) stack.getItem();
+            item.addData(stack, amount, dataType);
+            int maxData = item.getMaxData(stack);
+
+            if (item.getData(stack, DataType.COMPOSITION) == maxData && item.getData(stack, DataType.DISTANCE) == maxData && item.getData(stack, DataType.MASS) == maxData) {
+                processComplete();
+            }
+        }
+    }
+
+    private void attemptAllResearchStart() {
+        ItemStack stack = getStackInSlot(0);
+        if (stack.isEmpty() || !(stack.getItem() instanceof ItemAsteroidChip))
+            return;
+
+        ItemAsteroidChip item = (ItemAsteroidChip) stack.getItem();
+
+        if (researchingAtmosphere && atmosphereProgress < 0 && extractData(1, DataStorage.DataType.COMPOSITION, false) > 0 && !item.isFull(stack, DataStorage.DataType.COMPOSITION))
+            atmosphereProgress = 0;
+
+        if (researchingDistance && distanceProgress < 0 && extractData(1, DataStorage.DataType.DISTANCE, false) > 0 && !item.isFull(stack, DataStorage.DataType.DISTANCE))
+            distanceProgress = 0;
+
+        if (researchingMass && massProgress < 0 && extractData(1, DataStorage.DataType.MASS, false) > 0 && !item.isFull(stack, DataStorage.DataType.MASS))
+            massProgress = 0;
+
+        this.markDirty();
+    }
+
+    private int extractData(int amt, DataStorage.DataType type, boolean simulate) {
+        switch (type) {
+            case COMPOSITION:
+                if (dataCables[0] != null)
+                    return dataCables[0].extractData(1, DataStorage.DataType.COMPOSITION, EnumFacing.UP, !simulate);
+            case DISTANCE:
+                if (dataCables[1] != null)
+                    return dataCables[1].extractData(1, DataStorage.DataType.DISTANCE, EnumFacing.UP, !simulate);
+            case MASS:
+                if (dataCables[2] != null)
+                    return dataCables[2].extractData(1, DataStorage.DataType.MASS, EnumFacing.UP, !simulate);
+
+            default:
+                return 0;
+        }
+    }
 
 
-	private TileDataBus[] dataCables;
-	private boolean researchingDistance, researchingAtmosphere, researchingMass;
-	private int atmosphereProgress, distanceProgress, massProgress;
-	private static final int maxResearchTime = 20;
-	private EmbeddedInventory inventory;
-	private TileInventoryHatch inputHatch, outputHatch;
+    @Override
+    public void update() {
 
-	public TileAstrobodyDataProcessor() {
-		dataCables = new TileDataBus[3];
-		powerPerTick = 100;
-		massProgress = distanceProgress = atmosphereProgress = -1;
-		inventory = new EmbeddedInventory(1);
-	}
+        if (this.timeAlive == 0) {
+            if (!this.world.isRemote) {
+                if (this.isComplete()) {
+                    this.canRender = this.completeStructure = this.completeStructure(this.world.getBlockState(this.pos));
+                }
+            } else {
+                SoundEvent str;
+                if ((str = this.getSound()) != null) {
+                    this.playMachineSound(str);
+                }
+            }
 
-	@Override
-	public List<BlockMeta> getAllowableWildCardBlocks() {
-		List<BlockMeta> list = super.getAllowableWildCardBlocks();
-		list.add(new BlockMeta(Blocks.IRON_BLOCK,BlockMeta.WILDCARD));
-		return list;
-	}
+            this.timeAlive = 1;
+        }
 
-	@Override
-	public boolean shouldHideBlock(World world, BlockPos pos2, IBlockState tile) { return true; }
+        if (!this.world.isRemote && this.world.getTotalWorldTime() % 1000L == 0L && !this.isComplete()) {
+            this.attemptCompleteStructure(this.world.getBlockState(this.pos));
+            this.markDirty();
+            this.world.notifyBlockUpdate(this.pos, this.world.getBlockState(this.pos), this.world.getBlockState(this.pos), 3);
+        }
 
-	@Override
-	protected void integrateTile(TileEntity tile) {
-		super.integrateTile(tile);
+        if (this.isRunning()) {
+            if ((this.hasEnergy(this.requiredPowerPerTick()) && !this.world.isRemote) || (this.world.isRemote && this.waspoweredlasttick)) {
+                this.onRunningPoweredTick();
+                if (!this.world.isRemote) {
+                    if (!this.waspoweredlasttick) {
+                        this.waspoweredlasttick = true;
+                        this.markDirty();
+                        PacketHandler.sendToNearby(new PacketMachine(this, (byte) TileMultiblockMachine.NetworkPackets.POWERERROR.ordinal()), this.world.provider.getDimension(), this.pos.getX(), this.pos.getY(), this.pos.getZ(), 256.0);
+                        this.world.notifyBlockUpdate(this.pos, this.world.getBlockState(this.pos), this.world.getBlockState(this.pos), 3);
+                    }
 
-		if(tile instanceof TileDataBus) {
-			for(int i = 0; i < dataCables.length; i++) {
-				if(dataCables[i] == null) {
-					dataCables[i] = (TileDataBus)tile;
+                    this.useEnergy(this.usedPowerPerTick());
+                }
+            } else if (!this.world.isRemote && this.waspoweredlasttick) {
+                this.waspoweredlasttick = false;
+                this.markDirty();
+                PacketHandler.sendToNearby(new PacketMachine(this, (byte) TileMultiblockMachine.NetworkPackets.POWERERROR.ordinal()), this.world.provider.getDimension(), this.pos.getX(), this.pos.getY(), this.pos.getZ(), 256.0);
+                this.world.notifyBlockUpdate(this.pos, this.world.getBlockState(this.pos), this.world.getBlockState(this.pos), 3);
+            }
+        }
 
-					switch(i) {
-					case 0:
-						dataCables[i].lockData(DataStorage.DataType.COMPOSITION);
-						break;
-					case 1:
-						dataCables[i].lockData(DataStorage.DataType.DISTANCE);
-						break;
-					case 2:
-						dataCables[i].lockData(DataStorage.DataType.MASS);
-					}
-					break;
-				}
-			}
-		}
-		else if(tile instanceof TileInputHatch) {
-			inputHatch = (TileInventoryHatch) tile;
+    }
+    
+    @Override
+    protected void onRunningPoweredTick() {
+        if (completionTime > 0)
+            super.onRunningPoweredTick();
 
-		}
-		else if(tile instanceof TileOutputHatch) {
-			outputHatch = (TileInventoryHatch) tile; 
-		}
-	}
+        ItemStack stack = getStackInSlot(0);
 
-	@Override
-	public void deconstructMultiBlock(World world, BlockPos destroyedPos, boolean blockBroken, IBlockState state) {
+        if (!stack.isEmpty() && stack.getItem().equals(AdvancedRocketryItems.itemAsteroidChip)) {
+            ItemAsteroidChip item = (ItemAsteroidChip) stack.getItem();
 
-		//Make sure to unlock the data cables
-		for (TileDataBus dataCable : dataCables) {
-			if (dataCable != null)
-				dataCable.lockData(null);
-		}
+            if (researchingAtmosphere && extractData(1, DataStorage.DataType.COMPOSITION, true) > 0 && !item.isFull(stack, DataStorage.DataType.COMPOSITION)) {
+                if (atmosphereProgress == maxResearchTime) {
+                    atmosphereProgress = -1;
 
-		super.deconstructMultiBlock(world, destroyedPos,
-				blockBroken, state);
-	}
+                    if (!world.isRemote) {
+                        incrementDataOnChip(1, DataType.COMPOSITION);
+                        extractData(1, DataStorage.DataType.COMPOSITION, false);
+                        //attemptAllResearchStart();
+                    }
+                } else
+                    atmosphereProgress++;
+            }
 
-	@Override
-	public void resetCache() {
-		super.resetCache();
-		Arrays.fill(dataCables, null);
-		inputHatch = null;
-		outputHatch = null;
-	}
+            if (researchingMass && extractData(1, DataStorage.DataType.MASS, true) > 0 && !item.isFull(stack, DataStorage.DataType.MASS)) {
+                if (massProgress == maxResearchTime) {
 
-	@Override
-	public Object[][][] getStructure() {
-		return structure;
-	}
+                    massProgress = -1;
 
-	@Override
-	public String getMachineName() {
-		return AdvancedRocketryBlocks.blockPlanetAnalyser.getLocalizedName();
-	}
+                    if (!world.isRemote) {
+                        incrementDataOnChip(1, DataType.MASS);
+                        extractData(1, DataStorage.DataType.MASS, false);
+                        //attemptAllResearchStart();
+                    }
+                } else
+                    massProgress++;
+            }
 
-	@Override
-	@Nonnull
-	public AxisAlignedBB getRenderBoundingBox() {
+            if (researchingDistance && extractData(1, DataStorage.DataType.DISTANCE, true) > 0 && !item.isFull(stack, DataStorage.DataType.DISTANCE)) {
+                if (distanceProgress == maxResearchTime) {
+                    distanceProgress = -1;
+                    if (!world.isRemote) {
+                        incrementDataOnChip(1, DataType.DISTANCE);
+                        extractData(1, DataStorage.DataType.DISTANCE, false);
+                        //attemptAllResearchStart();
+                    }
+                } else
+                    distanceProgress++;
+            }
+        }
+    }
 
-		return new AxisAlignedBB(pos.add(-2,-2,-2),pos.add(2,2,2));
-	}
+    @Override
+    public boolean isRunning() {
+        return (!getStackInSlot(0).isEmpty() && getStackInSlot(0).getItem().equals(AdvancedRocketryItems.itemAsteroidChip) && (researchingAtmosphere || researchingDistance || researchingMass));
+    }
 
-	@Override
-	public void onInventoryUpdated() {
+    @Override
+    public void onInventoryButtonPressed(int buttonId) {
+        if (buttonId == 0)
+            super.onInventoryButtonPressed(buttonId);
+        else if (buttonId == 1) { //Process button is pressed
+            PacketHandler.sendToServer(new PacketMachine(this, (byte) 2));
+        } else if (buttonId == 2) {
+            //densitySetting = densityButton.getOptionSelected();
+            //distanceSetting = distanceButton.getOptionSelected();
+            //PacketHandler.sendToServer(new PacketMachine(this,(byte)101));
+        } else if (buttonId == 4) {
+            researchingAtmosphere = !researchingAtmosphere;
+            PacketHandler.sendToServer(new PacketMachine(this, (byte) 4));
+        } else if (buttonId == 5) {
+            researchingDistance = !researchingDistance;
+            PacketHandler.sendToServer(new PacketMachine(this, (byte) 4));
+        } else if (buttonId == 6) {
+            researchingMass = !researchingMass;
+            PacketHandler.sendToServer(new PacketMachine(this, (byte) 4));
+        }
+    }
 
-		super.onInventoryUpdated();
-		if(inputHatch == null)
-			return;
+    @Override
+    public void writeDataToNetwork(ByteBuf out, byte id) {
+        super.writeDataToNetwork(out, id);
+        if (id == 4) {
+            out.writeInt((researchingAtmosphere ? 1 : 0) | (researchingDistance ? 2 : 0) | (researchingMass ? 4 : 0));
+        }
 
-		if(getStackInSlot(0) == ItemStack.EMPTY) {
-			for(int j = 0; j < inputHatch.getSizeInventory(); j++) {
-				ItemStack stack2 = inputHatch.getStackInSlot(j);
-				if(!stack2.isEmpty() && stack2.getItem() instanceof ItemAsteroidChip && ((ItemAsteroidChip)stack2.getItem()).getUUID(stack2) != null) {
-					setInventorySlotContents(0, inputHatch.decrStackSize(j, 1));
-					break;
-				}
-			}
-		}
-		attemptAllResearchStart();
-	}
+    }
 
-	@Override
-	protected void processComplete() {
-		if(!world.isRemote) {
-			//Move chip to output 
-			for(int i = 0; i < outputHatch.getSizeInventory(); i++) {
-				if(outputHatch.getStackInSlot(i) == ItemStack.EMPTY) {
-					outputHatch.setInventorySlotContents(i, this.decrStackSize(0, 1));
-					return;
-				}
-			}
-		}
-	}
+    @Override
+    public void readDataFromNetwork(ByteBuf in, byte packetId,
+                                    NBTTagCompound nbt) {
+        super.readDataFromNetwork(in, packetId, nbt);
 
-	@Override
-	public boolean completeStructure(IBlockState state) {
-		boolean result = super.completeStructure(state);
-		((BlockMultiblockMachine)world.getBlockState(pos).getBlock()).setBlockState(world, world.getBlockState(pos), pos, result);
-		return result;
-	}
+        if (packetId == 3 || packetId == 4 || packetId > 100) {
+            nbt.setInteger("state", in.readInt());
+        }
 
-	private void incrementDataOnChip(int amount, DataStorage.DataType dataType) {
-		ItemStack stack = getStackInSlot(0);
-		if(!stack.isEmpty() && stack.getItem().equals(AdvancedRocketryItems.itemAsteroidChip)) {
-			ItemAsteroidChip item = (ItemAsteroidChip)stack.getItem();
-			item.addData(stack, amount, dataType);
-			int maxData = item.getMaxData(stack);
+    }
 
-			if(item.getData(stack, DataType.COMPOSITION) == maxData && item.getData(stack, DataType.DISTANCE) == maxData && item.getData(stack, DataType.MASS) == maxData) {
-				processComplete();
-			}
-		}
-	}
+    @Override
+    public void useNetworkData(EntityPlayer player, Side side, byte id,
+                               NBTTagCompound nbt) {
+        super.useNetworkData(player, side, id, nbt);
 
-	private void attemptAllResearchStart() {
-		ItemStack stack = getStackInSlot(0);
-		if(stack.isEmpty() || !(stack.getItem() instanceof ItemAsteroidChip))
-			return;
+        if (id == 4) {
+            int states = nbt.getInteger("state");
 
-		ItemAsteroidChip item = (ItemAsteroidChip)stack.getItem();
+            researchingAtmosphere = (states & 1) != 0;
+            researchingDistance = (states & 2) != 0;
+            researchingMass = (states & 4) != 0;
 
-		if(researchingAtmosphere && atmosphereProgress < 0 && extractData(1, DataStorage.DataType.COMPOSITION, false) > 0 && !item.isFull(stack, DataStorage.DataType.COMPOSITION))
-			atmosphereProgress = 0;
+            attemptAllResearchStart();
 
-		if(researchingDistance && distanceProgress < 0 && extractData(1, DataStorage.DataType.DISTANCE, false) > 0 && !item.isFull(stack, DataStorage.DataType.DISTANCE))
-			distanceProgress = 0;
+            this.markDirty();
+        }
+    }
 
-		if(researchingMass && massProgress < 0 && extractData(1, DataStorage.DataType.MASS, false) > 0 && !item.isFull(stack, DataStorage.DataType.MASS))
-			massProgress = 0;
+    @Override
+    public List<ModuleBase> getModules(int ID, EntityPlayer player) {
 
-		this.markDirty();
-	}
+        LinkedList<ModuleBase> modules = new LinkedList<>();
+        modules.add(new ModulePower(18, 20, getBatteries()));
 
-	private int extractData(int amt, DataStorage.DataType type, boolean simulate) {
-		switch(type) {
-		case COMPOSITION:
-			if(dataCables[0] != null)
-				return dataCables[0].extractData(1, DataStorage.DataType.COMPOSITION, EnumFacing.UP, !simulate);
-		case DISTANCE:
-			if(dataCables[1] != null)
-				return dataCables[1].extractData(1, DataStorage.DataType.DISTANCE, EnumFacing.UP, !simulate);
-		case MASS:
-			if(dataCables[2] != null)
-				return dataCables[2].extractData(1, DataStorage.DataType.MASS, EnumFacing.UP, !simulate);
+        //TODO: write NBT
+        for (int i = 0; i < 3; i++) {
+            if (dataCables[i] != null)
+                modules.add(new ModuleData(32 + (i * 50), 20, 0, dataCables[i], dataCables[i].getDataObject()));
+        }
 
-		default:
-			return 0;
-		}
-	}
+        int xStart = 150;
+        int yStart = 14;
 
-	@Override
-	protected void onRunningPoweredTick() {
-		if(completionTime > 0)
-			super.onRunningPoweredTick();
+        modules.add(new ModuleText(15, 76, "Research", 0x404040));
 
-		ItemStack stack = getStackInSlot(0);
+        modules.add(new ModuleToggleSwitch(15, 86, 4, "", this, zmaster587.libVulpes.inventory.TextureResources.buttonToggleImage, LibVulpes.proxy.getLocalizedString("msg.abdp.compositionresearch"), 11, 26, researchingAtmosphere));
+        modules.add(new ModuleToggleSwitch(65, 86, 5, "", this, zmaster587.libVulpes.inventory.TextureResources.buttonToggleImage, LibVulpes.proxy.getLocalizedString("msg.abdp.distanceresearch"), 11, 26, researchingDistance));
+        modules.add(new ModuleToggleSwitch(125, 86, 6, "", this, zmaster587.libVulpes.inventory.TextureResources.buttonToggleImage, LibVulpes.proxy.getLocalizedString("msg.abdp.massresearch"), 11, 26, researchingMass));
 
-		if(!stack.isEmpty() && stack.getItem().equals(AdvancedRocketryItems.itemAsteroidChip)) {
-			ItemAsteroidChip item = (ItemAsteroidChip) stack.getItem();
+        //Research indicators
+        modules.add(new ModuleProgress(26, 86, 1, TextureResources.progressScience, this));
+        modules.add(new ModuleProgress(76, 86, 2, TextureResources.progressScience, this));
+        modules.add(new ModuleProgress(136, 86, 3, TextureResources.progressScience, this));
 
-			if(researchingAtmosphere && extractData(1, DataStorage.DataType.COMPOSITION, true) > 0 && !item.isFull(stack, DataStorage.DataType.COMPOSITION)) {
-				if(atmosphereProgress == maxResearchTime) {
-					atmosphereProgress = -1;
-
-					if(!world.isRemote) {
-						incrementDataOnChip(1, DataType.COMPOSITION);
-						extractData(1, DataStorage.DataType.COMPOSITION, false);
-						//attemptAllResearchStart();
-					}
-				}
-				else
-					atmosphereProgress++;
-			}
-
-			if(researchingMass && extractData(1, DataStorage.DataType.MASS, true) > 0 && !item.isFull(stack, DataStorage.DataType.MASS)) {
-				if(massProgress == maxResearchTime) {
-
-					massProgress = -1;
-
-					if(!world.isRemote) {
-						incrementDataOnChip(1, DataType.MASS);
-						extractData(1, DataStorage.DataType.MASS, false);
-						//attemptAllResearchStart();
-					}
-				}
-				else
-					massProgress++;
-			}
-
-			if(researchingDistance && extractData(1, DataStorage.DataType.DISTANCE, true) > 0  && !item.isFull(stack, DataStorage.DataType.DISTANCE)) {
-				if(distanceProgress == maxResearchTime) {
-					distanceProgress = -1;
-					if(!world.isRemote) {
-						incrementDataOnChip(1, DataType.DISTANCE);
-						extractData(1, DataStorage.DataType.DISTANCE, false);
-						//attemptAllResearchStart();
-					}
-				}
-				else
-					distanceProgress++;
-			}
-		}
-	}
-
-	@Override
-	public boolean isRunning() {
-		return (!getStackInSlot(0).isEmpty() && getStackInSlot(0).getItem().equals(AdvancedRocketryItems.itemAsteroidChip) && (researchingAtmosphere || researchingDistance || researchingMass));
-	}
-
-	@Override
-	public void onInventoryButtonPressed(int buttonId) {
-		if(buttonId == 0)
-			super.onInventoryButtonPressed(buttonId);
-		else if(buttonId == 1) { //Process button is pressed
-			PacketHandler.sendToServer(new PacketMachine(this, (byte)2));
-		}
-		else if(buttonId == 2) {
-			//densitySetting = densityButton.getOptionSelected();
-			//distanceSetting = distanceButton.getOptionSelected();
-			//PacketHandler.sendToServer(new PacketMachine(this,(byte)101));
-		}
-		else if(buttonId == 4) {
-			researchingAtmosphere = !researchingAtmosphere;
-			PacketHandler.sendToServer(new PacketMachine(this, (byte)4));
-		}
-		else if(buttonId == 5) {
-			researchingDistance = !researchingDistance;
-			PacketHandler.sendToServer(new PacketMachine(this, (byte)4));
-		}
-		else if(buttonId == 6) {
-			researchingMass = ! researchingMass;
-			PacketHandler.sendToServer(new PacketMachine(this, (byte)4));
-		}
-	}
-
-	@Override
-	public void writeDataToNetwork(ByteBuf out, byte id) {
-		super.writeDataToNetwork(out, id);
-		if(id == 4) {
-			out.writeInt((researchingAtmosphere ? 1 : 0) | (researchingDistance ? 2 : 0) | (researchingMass ? 4 : 0));
-		}
-
-	}
-
-	@Override
-	public void readDataFromNetwork(ByteBuf in, byte packetId,
-			NBTTagCompound nbt) {
-		super.readDataFromNetwork(in, packetId, nbt);
-
-		if(packetId == 3 || packetId == 4 || packetId > 100) {
-			nbt.setInteger("state", in.readInt());
-		}
-
-	}
-
-	@Override
-	public void useNetworkData(EntityPlayer player, Side side, byte id,
-			NBTTagCompound nbt) {
-		super.useNetworkData(player, side, id, nbt);
-
-		if (id == 4) {
-			int states = nbt.getInteger("state");
-
-			researchingAtmosphere = (states & 1) != 0;
-			researchingDistance = (states & 2) != 0;
-			researchingMass =	  (states & 4) != 0;
-
-			attemptAllResearchStart();
-
-			this.markDirty();
-		}
-	}
-
-	@Override
-	public List<ModuleBase> getModules(int ID, EntityPlayer player) {
-
-		LinkedList<ModuleBase> modules = new LinkedList<>();
-		modules.add(new ModulePower(18, 20, getBatteries()));
-
-		//TODO: write NBT
-		for(int i = 0; i < 3; i++) {
-			if(dataCables[i] != null)
-				modules.add(new ModuleData(32 + (i*50), 20, 0, dataCables[i],  dataCables[i].getDataObject()));
-		}
-
-		int xStart = 150;
-		int yStart = 14;
-
-		modules.add(new ModuleText(15, 76, "Research",0x404040));
-
-		modules.add(new ModuleToggleSwitch(15, 86, 4, "", this,  zmaster587.libVulpes.inventory.TextureResources.buttonToggleImage, LibVulpes.proxy.getLocalizedString("msg.abdp.compositionresearch"), 11, 26, researchingAtmosphere));
-		modules.add(new ModuleToggleSwitch(65, 86, 5, "", this,  zmaster587.libVulpes.inventory.TextureResources.buttonToggleImage, LibVulpes.proxy.getLocalizedString("msg.abdp.distanceresearch"), 11, 26, researchingDistance));
-		modules.add(new ModuleToggleSwitch(125, 86, 6, "", this,  zmaster587.libVulpes.inventory.TextureResources.buttonToggleImage, LibVulpes.proxy.getLocalizedString("msg.abdp.massresearch"), 11, 26, researchingMass));
-
-		//Research indicators
-		modules.add(new ModuleProgress(26, 86, 1, TextureResources.progressScience, this));
-		modules.add(new ModuleProgress(76, 86, 2, TextureResources.progressScience, this));
-		modules.add(new ModuleProgress(136, 86, 3, TextureResources.progressScience, this));
-
-		modules.add(new ModuleSlotArray(76, 120, this, 0, 1));
+        modules.add(new ModuleSlotArray(76, 120, this, 0, 1));
 
 		/*modules.add(new ModuleText(15, 76, "Atmos",0x404040));
 		modules.add(new ModuleText(65, 76, "Distance",0x404040));
@@ -399,179 +441,180 @@ public class TileAstrobodyDataProcessor extends TileMultiPowerConsumer implement
 
 		subModule.add(new ModuleButton(center + properties.getMapDisplayPositionX() , center + properties.getMapDisplayPositionY(), 99, "", this, new ResourceLocation[] { properties.getPlanetIcon() }, properties.getName(), properties.getMapDisplayeSize(), properties.getMapDisplayeSize()));*/
 
-		return modules;
-	}
+        return modules;
+    }
 
 
-	@Override
-	public int getProgress(int id) {
-		if(id == 0)
-			return super.getProgress(id);
-		else if(id == 1)
-			return atmosphereProgress;
-		else if(id == 2)
-			return distanceProgress;
-		else if(id == 3)
-			return massProgress;
-		return 0;
-	}
+    @Override
+    public int getProgress(int id) {
+        if (id == 0)
+            return super.getProgress(id);
+        else if (id == 1)
+            return atmosphereProgress;
+        else if (id == 2)
+            return distanceProgress;
+        else if (id == 3)
+            return massProgress;
+        return 0;
+    }
 
-	@Override
-	public int getTotalProgress(int id) {
-		if(id == 0) 
-			return super.getTotalProgress(id);
-		return maxResearchTime;
-	}
+    @Override
+    public int getTotalProgress(int id) {
+        if (id == 0)
+            return super.getTotalProgress(id);
+        return maxResearchTime;
+    }
 
-	@Override
-	public float getNormallizedProgress(int id) {
-		if(id != 0)
-			return getProgress(id)/ (float)getTotalProgress(id);
-		return 0f;
-	}
+    @Override
+    public float getNormallizedProgress(int id) {
+        if (id != 0)
+            return getProgress(id) / (float) getTotalProgress(id);
+        return 0f;
+    }
 
-	@Override
-	public void setProgress(int id, int progress) {
-		if(id == 1)
-			atmosphereProgress = progress;
-		else if(id == 2)
-			distanceProgress = progress;
-		else
-			massProgress = progress;
-	}
+    @Override
+    public void setProgress(int id, int progress) {
+        if (id == 1)
+            atmosphereProgress = progress;
+        else if (id == 2)
+            distanceProgress = progress;
+        else
+            massProgress = progress;
+    }
 
-	@Override
-	public void setTotalProgress(int id, int progress) {
-		if(id == 0)
-			super.setTotalProgress(id, progress);
-	}
+    @Override
+    public void setTotalProgress(int id, int progress) {
+        if (id == 0)
+            super.setTotalProgress(id, progress);
+    }
 
-	@Override
-	public void readFromNBT(NBTTagCompound nbt) {
-		super.readFromNBT(nbt);
-		inventory.readFromNBT(nbt);
-		atmosphereProgress = nbt.getInteger("atmosphereProgress");
-		distanceProgress = nbt.getInteger("distanceProgress");
-		massProgress = nbt.getInteger("massProgress");
-	}
-	
-	@Override
-	protected void readNetworkData(NBTTagCompound nbt) {
-		super.readNetworkData(nbt);
-		researchingAtmosphere = nbt.getBoolean("researchingAtmosphere");
-		researchingDistance = nbt.getBoolean("researchingDistance");
-		researchingMass = nbt.getBoolean("researchingMass");
-	}
+    @Override
+    public void readFromNBT(NBTTagCompound nbt) {
+        super.readFromNBT(nbt);
+        inventory.readFromNBT(nbt);
+        atmosphereProgress = nbt.getInteger("atmosphereProgress");
+        distanceProgress = nbt.getInteger("distanceProgress");
+        massProgress = nbt.getInteger("massProgress");
+    }
 
-	@Override
-	public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
-		super.writeToNBT(nbt);
-		inventory.writeToNBT(nbt);
+    @Override
+    protected void readNetworkData(NBTTagCompound nbt) {
+        super.readNetworkData(nbt);
+        researchingAtmosphere = nbt.getBoolean("researchingAtmosphere");
+        researchingDistance = nbt.getBoolean("researchingDistance");
+        researchingMass = nbt.getBoolean("researchingMass");
+    }
 
-		nbt.setBoolean("researchingAtmosphere", researchingAtmosphere);
-		nbt.setBoolean("researchingDistance", researchingDistance);
-		nbt.setBoolean("researchingMass", researchingMass);
-		nbt.setInteger("atmosphereProgress", atmosphereProgress);
-		nbt.setInteger("distanceProgress", distanceProgress);
-		nbt.setInteger("massProgress", massProgress);
+    @Override
+    public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
+        super.writeToNBT(nbt);
+        inventory.writeToNBT(nbt);
 
-		return nbt;
-	}
+        nbt.setBoolean("researchingAtmosphere", researchingAtmosphere);
+        nbt.setBoolean("researchingDistance", researchingDistance);
+        nbt.setBoolean("researchingMass", researchingMass);
+        nbt.setInteger("atmosphereProgress", atmosphereProgress);
+        nbt.setInteger("distanceProgress", distanceProgress);
+        nbt.setInteger("massProgress", massProgress);
 
-	@Override
-	protected void writeNetworkData(NBTTagCompound nbt) {
-		super.writeNetworkData(nbt);
-		nbt.setBoolean("researchingAtmosphere", researchingAtmosphere);
-		nbt.setBoolean("researchingDistance", researchingDistance);
-		nbt.setBoolean("researchingMass", researchingMass);
-	}
-	
-	@Override
-	public int getSizeInventory() {
-		return inventory.getSizeInventory();
-	}
+        return nbt;
+    }
 
-	@Override
-	@Nonnull
-	public ItemStack getStackInSlot(int slot) {
-		return inventory.getStackInSlot(slot);
-	}
+    @Override
+    protected void writeNetworkData(NBTTagCompound nbt) {
+        super.writeNetworkData(nbt);
+        nbt.setBoolean("researchingAtmosphere", researchingAtmosphere);
+        nbt.setBoolean("researchingDistance", researchingDistance);
+        nbt.setBoolean("researchingMass", researchingMass);
+    }
 
-	@Override
-	@Nonnull
-	public ItemStack decrStackSize(int slot, int amount) {
-		return inventory.decrStackSize(slot, amount);
-	}
+    @Override
+    public int getSizeInventory() {
+        return inventory.getSizeInventory();
+    }
 
-	@Override
-	public void setInventorySlotContents(int slot, @Nonnull ItemStack stack) {
-		inventory.setInventorySlotContents(slot, stack);
-		onInventoryUpdated();
-	}
+    @Override
+    @Nonnull
+    public ItemStack getStackInSlot(int slot) {
+        return inventory.getStackInSlot(slot);
+    }
 
-	@Override
-	@Nonnull
-	public String getName() {
-		return getMachineName();
-	}
+    @Override
+    @Nonnull
+    public ItemStack decrStackSize(int slot, int amount) {
+        return inventory.decrStackSize(slot, amount);
+    }
 
-	@Override
-	public boolean hasCustomName() {
-		return false;
-	}
+    @Override
+    public void setInventorySlotContents(int slot, @Nonnull ItemStack stack) {
+        inventory.setInventorySlotContents(slot, stack);
+        onInventoryUpdated();
+    }
 
-	@Override
-	public int getInventoryStackLimit() {
-		return 1;
-	}
+    @Override
+    @Nonnull
+    public String getName() {
+        return getMachineName();
+    }
 
-	@Override
-	public boolean isUsableByPlayer(EntityPlayer player) {
-		return player.getDistanceSq(pos) < 4096;
-	}
-	@Override
-	public boolean isEmpty() {
-		return inventory.isEmpty();
-	}
+    @Override
+    public boolean hasCustomName() {
+        return false;
+    }
 
-	@Override
-	public void openInventory(EntityPlayer player) {
+    @Override
+    public int getInventoryStackLimit() {
+        return 1;
+    }
 
-	}
+    @Override
+    public boolean isUsableByPlayer(EntityPlayer player) {
+        return player.getDistanceSq(pos) < 4096;
+    }
 
-	@Override
-	public void closeInventory(EntityPlayer player) {
+    @Override
+    public boolean isEmpty() {
+        return inventory.isEmpty();
+    }
 
-	}
+    @Override
+    public void openInventory(EntityPlayer player) {
 
-	@Override
-	public boolean isItemValidForSlot(int slot, @Nonnull ItemStack stack) {
-		return false;//inventory.isItemValidForSlot(slot, stack);
-	}
+    }
 
-	@Override
-	@Nonnull
-	public ItemStack removeStackFromSlot(int index) {
-		return inventory.removeStackFromSlot(index);
-	}
+    @Override
+    public void closeInventory(EntityPlayer player) {
 
-	@Override
-	public int getField(int id) {
-		return inventory.getField(id);
-	}
+    }
 
-	@Override
-	public void setField(int id, int value) {
-		inventory.setField(id, value);
-	}
+    @Override
+    public boolean isItemValidForSlot(int slot, @Nonnull ItemStack stack) {
+        return false;//inventory.isItemValidForSlot(slot, stack);
+    }
 
-	@Override
-	public int getFieldCount() {
-		return inventory.getFieldCount();
-	}
+    @Override
+    @Nonnull
+    public ItemStack removeStackFromSlot(int index) {
+        return inventory.removeStackFromSlot(index);
+    }
 
-	@Override
-	public void clear() {
-		inventory.clear();
-	}
+    @Override
+    public int getField(int id) {
+        return inventory.getField(id);
+    }
+
+    @Override
+    public void setField(int id, int value) {
+        inventory.setField(id, value);
+    }
+
+    @Override
+    public int getFieldCount() {
+        return inventory.getFieldCount();
+    }
+
+    @Override
+    public void clear() {
+        inventory.clear();
+    }
 }

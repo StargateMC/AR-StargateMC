@@ -21,6 +21,10 @@
 	{
             "type": "forge:ore_dict",
             "ore": "plateTin"
+        },
+	{
+            "type": "forge:ore_dict",
+            "ore": "dustRedstone"
         }
     ],
     "time": 1000,
