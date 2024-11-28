@@ -44,384 +44,378 @@ import java.util.List;
 
 public class TileSpaceElevator extends TileMultiPowerConsumer implements IModularInventory, ILinkableTile, ITickable {
 
-    private static final byte SUMMON_PACKET = 2;
-    private static final int BUTTON_ID_OFFSET = 5;
-    Object[][][] structure =
-            {
-                    {
-                            {Blocks.AIR, Blocks.AIR, Blocks.AIR, 'P', 'c', 'P', Blocks.AIR, Blocks.AIR, Blocks.AIR},
-                            {"blockSteel", Blocks.AIR, Blocks.AIR, "slab", "slab", "slab", Blocks.AIR, Blocks.AIR, "blockSteel"},
-                            {Blocks.AIR, LibVulpesBlocks.blockAdvStructureBlock, "slab", "slab", "slab", "slab", "slab", LibVulpesBlocks.blockAdvStructureBlock, Blocks.AIR},
-                            {Blocks.AIR, "slab", LibVulpesBlocks.blockAdvStructureBlock, "slab", "slab", "slab", LibVulpesBlocks.blockAdvStructureBlock, "slab", Blocks.AIR},
-                            {"slab", "slab", "slab", LibVulpesBlocks.blockAdvStructureBlock, LibVulpesBlocks.blockAdvStructureBlock, LibVulpesBlocks.blockAdvStructureBlock, "slab", "slab", "slab"},
-                            {"slab", "slab", "slab", LibVulpesBlocks.blockAdvStructureBlock, LibVulpesBlocks.motors, LibVulpesBlocks.blockAdvStructureBlock, "slab", "slab", "slab"},
-                            {"slab", "slab", "slab", LibVulpesBlocks.blockAdvStructureBlock, LibVulpesBlocks.blockAdvStructureBlock, LibVulpesBlocks.blockAdvStructureBlock, "slab", "slab", "slab"},
-                            {Blocks.AIR, "slab", LibVulpesBlocks.blockAdvStructureBlock, "slab", "slab", "slab", LibVulpesBlocks.blockAdvStructureBlock, "slab", Blocks.AIR},
-                            {Blocks.AIR, LibVulpesBlocks.blockAdvStructureBlock, "slab", "slab", "slab", "slab", "slab", LibVulpesBlocks.blockAdvStructureBlock, Blocks.AIR},
-                            {"blockSteel", Blocks.AIR, Blocks.AIR, "slab", "slab", "slab", Blocks.AIR, Blocks.AIR, "blockSteel"}
-                    }
-            };
-    EntityElevatorCapsule capsule;
-    boolean firstTick;
-    DimensionBlockPosition dimBlockPos;
-    private boolean isTetherConnected;
-    private ModuleText landingPadDisplayText;
+	Object[][][] structure =
+		{
+			{
+				{Blocks.AIR,Blocks.AIR,Blocks.AIR,'P','c','P',Blocks.AIR,Blocks.AIR,Blocks.AIR},
+				{"blockSteel",Blocks.AIR,Blocks.AIR,"slab","slab","slab",Blocks.AIR,Blocks.AIR,"blockSteel"},
+				{Blocks.AIR,LibVulpesBlocks.blockAdvStructureBlock,"slab","slab","slab","slab","slab",LibVulpesBlocks.blockAdvStructureBlock,Blocks.AIR},
+				{Blocks.AIR,"slab",LibVulpesBlocks.blockAdvStructureBlock,"slab","slab","slab",LibVulpesBlocks.blockAdvStructureBlock,"slab",Blocks.AIR},
+				{"slab","slab","slab",LibVulpesBlocks.blockAdvStructureBlock,LibVulpesBlocks.blockAdvStructureBlock,LibVulpesBlocks.blockAdvStructureBlock,"slab","slab","slab"},
+				{"slab","slab","slab",LibVulpesBlocks.blockAdvStructureBlock,LibVulpesBlocks.motors,LibVulpesBlocks.blockAdvStructureBlock,"slab","slab","slab"},
+				{"slab","slab","slab",LibVulpesBlocks.blockAdvStructureBlock,LibVulpesBlocks.blockAdvStructureBlock,LibVulpesBlocks.blockAdvStructureBlock,"slab","slab","slab"},
+				{Blocks.AIR,"slab",LibVulpesBlocks.blockAdvStructureBlock,"slab","slab","slab",LibVulpesBlocks.blockAdvStructureBlock,"slab",Blocks.AIR},
+				{Blocks.AIR,LibVulpesBlocks.blockAdvStructureBlock,"slab","slab","slab","slab","slab",LibVulpesBlocks.blockAdvStructureBlock,Blocks.AIR},
+				{"blockSteel",Blocks.AIR,Blocks.AIR,"slab","slab","slab",Blocks.AIR,Blocks.AIR,"blockSteel"}
+			}
+		};
 
-    public TileSpaceElevator() {
-        super();
-        capsule = null;
-        firstTick = true;
+	EntityElevatorCapsule capsule;
+	boolean firstTick;
+	private boolean isTetherConnected;
+	DimensionBlockPosition dimBlockPos;
 
-        landingPadDisplayText = new ModuleText(256, 16, "", 0x00FF00, 2f);
-        landingPadDisplayText.setColor(0x00ff00);
-        dimBlockPos = null;
-    }
+	private ModuleText landingPadDisplayText;
+	private static final byte SUMMON_PACKET = 2;
+	private static final int BUTTON_ID_OFFSET = 5;
 
-    public static boolean isDestinationValid(int destinationDimensionID, DimensionBlockPosition pos, HashedBlockPosition myPos, int myDimensionID) {
-        if (pos == null || pos.pos == null)
-            return false;
-        if (myDimensionID == ARConfiguration.getCurrentConfig().spaceDimId && SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPos.getBlockPos()) != null) {
-            return PlanetaryTravelHelper.isTravelWithinGeostationaryOrbit((SpaceStationObject) SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPos.getBlockPos()), pos.dimid);
-        } else if (pos.dimid == ARConfiguration.getCurrentConfig().spaceDimId && SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(pos.pos.getBlockPos()) != null) {
-            return PlanetaryTravelHelper.isTravelWithinGeostationaryOrbit((SpaceStationObject) SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(pos.pos.getBlockPos()), myDimensionID);
-        }
-        return false;
-    }
+	public TileSpaceElevator() {
+		super();
+		capsule = null;
+		firstTick = true;
 
-    public static boolean wouldTetherBreakOnConnect(int destinationDimensionID, DimensionBlockPosition pos, HashedBlockPosition myPos, int myDimensionID) {
-        SpaceStationObject spaceStation = (myDimensionID == ARConfiguration.getCurrentConfig().spaceDimId) ? (SpaceStationObject) SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPos.getBlockPos()) : (SpaceStationObject) SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(pos.pos.getBlockPos());
+		landingPadDisplayText = new ModuleText(256, 16, "", 0x00FF00, 2f);
+		landingPadDisplayText.setColor(0x00ff00);
+		dimBlockPos = null;
+	}
+	
+	@Override
+	public void deconstructMultiBlock(World world, BlockPos destroyedPos, boolean blockBroken, IBlockState state) {
+		super.deconstructMultiBlock(world, destroyedPos, blockBroken, state);
+		
+		Entity entity = getCapsuleOnLine();
+		
+		if(entity != null)
+			entity.setDead();
+
+
+		World otherPlanet;
+		if((otherPlanet = DimensionManager.getWorld(dimBlockPos.dimid)) == null) {
+			DimensionManager.initDimension(dimBlockPos.dimid);
+			otherPlanet = DimensionManager.getWorld(dimBlockPos.dimid);
+		}
+
+		if(otherPlanet != null) {
+			TileEntity tile = otherPlanet.getTileEntity(dimBlockPos.pos.getBlockPos());
+			if(tile instanceof TileSpaceElevator) {
+				((TileSpaceElevator) tile).updateTetherLinkPosition(dimBlockPos, null);
+				updateTetherLinkPosition(new DimensionBlockPosition(world.provider.getDimension(), new HashedBlockPosition(getPos())), null);
+			}
+		}
+
+	}
+
+	@Override
+	public Object[][][] getStructure() {
+		return structure;
+	}
+
+	@Override
+	public String getMachineName() {
+		return getModularInventoryName();
+	}
+
+	@Override
+	public AxisAlignedBB getRenderBoundingBox() {
+		
+		return new AxisAlignedBB(pos.add(-5,-300,-5),pos.add(5,3000,5));
+	}
+
+	@Override
+	public boolean shouldHideBlock(World world, BlockPos pos, IBlockState tile) {
+		return true;
+	}
+
+	@Override
+	public List<ModuleBase> getModules(int ID, EntityPlayer player) {
+		List<ModuleBase> modules = super.getModules(ID, player);
+
+
+
+		if(ID == GuiHandler.guiId.MODULAR.ordinal()) {
+			modules.add(new ModuleButton(50, 47, 1, LibVulpes.proxy.getLocalizedString("msg.spaceElevator.button.summon"), this, TextureResources.buttonBuild, 80, 18));
+			if (isTetherConnected()) {
+				modules.add(new ModuleText(30, 23, LibVulpes.proxy.getLocalizedString("msg.spaceElevator.warning.anchored0"), 0x2d2d2d));
+				modules.add(new ModuleText(30, 35, LibVulpes.proxy.getLocalizedString("msg.spaceElevator.warning.anchored1"), 0x2d2d2d));
+			} else {
+				modules.add(new ModuleText(30, 32, LibVulpes.proxy.getLocalizedString("msg.spaceElevator.warning.unanchored"), 0x2d2d2d));
+			}
+
+		}
+
+		return modules;
+	}
+
+	public static boolean isDestinationValid(int destinationDimensionID, DimensionBlockPosition pos, HashedBlockPosition myPos, int myDimensionID) {
+		if (pos == null || pos.pos == null)
+			return false;
+		if (myDimensionID == ARConfiguration.getCurrentConfig().spaceDimId && SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPos.getBlockPos()) != null) {
+			return PlanetaryTravelHelper.isTravelWithinGeostationaryOrbit((SpaceStationObject)SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPos.getBlockPos()), pos.dimid);
+		} else if (pos.dimid == ARConfiguration.getCurrentConfig().spaceDimId && SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(pos.pos.getBlockPos()) != null) {
+			return PlanetaryTravelHelper.isTravelWithinGeostationaryOrbit((SpaceStationObject)SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(pos.pos.getBlockPos()), myDimensionID);
+		}
+		return false;
+	}
+
+	public static boolean wouldTetherBreakOnConnect(int destinationDimensionID, DimensionBlockPosition pos, HashedBlockPosition myPos, int myDimensionID) {
+		SpaceStationObject spaceStation = (myDimensionID == ARConfiguration.getCurrentConfig().spaceDimId) ? (SpaceStationObject) SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPos.getBlockPos()) : (SpaceStationObject)SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(pos.pos.getBlockPos());
         return spaceStation != null && spaceStation.wouldStationBreakTether();
-    }
+	}
 
-    @Override
-    public void deconstructMultiBlock(World world, BlockPos destroyedPos, boolean blockBroken, IBlockState state) {
-        super.deconstructMultiBlock(world, destroyedPos, blockBroken, state);
+	public boolean attemptLaunch() {
+		if(!isComplete() || !enabled || !hasEnergy(50000))
+			return false;
+		useEnergy(50000);
+		return true;
+	}
+	
+	@Override
+	@SideOnly(Side.CLIENT)
+	public void onInventoryButtonPressed(int buttonId) {
+		if(buttonId == 1) {
+			PacketHandler.sendToServer(new PacketMachine(this, SUMMON_PACKET));
+		}
+		if( buttonId >= BUTTON_ID_OFFSET) {
+			PacketHandler.sendToServer(new PacketMachine(this, (byte)buttonId));
+		}
+		super.onInventoryButtonPressed(buttonId);
+	}
 
+	public void notifyLanded(EntityElevatorCapsule e) {
+		if(capsule != null && capsule != e && !capsule.isDead)
+			e.setDead();
+		else {
+			capsule = e;
+			capsule.setSourceTile(new DimensionBlockPosition(world.provider.getDimension(), new HashedBlockPosition(pos)));
+			capsule.setDst(dimBlockPos);
+		}
 
+		int yOffset = (isAnchorOnSpaceStation()) ? - 5 : 1;
+		capsule.setPosition(getLandingLocationX(), getPos().getY() + yOffset, getLandingLocationZ());
 
-        World otherPlanet;
-        if ((otherPlanet = DimensionManager.getWorld(dimBlockPos.dimid)) == null) {
-            DimensionManager.initDimension(dimBlockPos.dimid);
-            otherPlanet = DimensionManager.getWorld(dimBlockPos.dimid);
-        }
+		EnumFacing facing = RotatableBlock.getFront(world.getBlockState(getPos()));
+		switch(facing) {
+		case EAST:
+			capsule.rotationYaw = 180;
+			break;
+		case SOUTH:
+			capsule.rotationYaw = 90;
+			break;
+		case NORTH:
+			capsule.rotationYaw = 270;
+			break;
+		default:
+			capsule.rotationYaw = 0;
+		}
+	}
 
-        if (otherPlanet != null) {
-            TileEntity tile = otherPlanet.getTileEntity(dimBlockPos.pos.getBlockPos());
-            if (tile instanceof TileSpaceElevator) {
-                ((TileSpaceElevator) tile).updateTetherLinkPosition(dimBlockPos, null);
-                updateTetherLinkPosition(new DimensionBlockPosition(world.provider.getDimension(), new HashedBlockPosition(getPos())), null);
-            }
-        }
-    }
+	@Override
+	public void useNetworkData(EntityPlayer player, Side side, byte id,
+			NBTTagCompound nbt) {
 
-    @Override
-    public Object[][][] getStructure() {
-        return structure;
-    }
+		if(id == SUMMON_PACKET) {
+			summonCapsule();
+		}
+		else if(id == BUTTON_ID_OFFSET) {
+			dimBlockPos = null;
+			capsule.setDst(null);
 
-    @Override
-    public String getMachineName() {
-        return getModularInventoryName();
-    }
+			markDirty();
+			world.notifyBlockUpdate(pos, world.getBlockState(pos),  world.getBlockState(pos), 3);
+		}
+		super.useNetworkData(player, side, id, nbt);
+	}
 
-    @Override
-    public AxisAlignedBB getRenderBoundingBox() {
-        return new AxisAlignedBB(pos.add(-5, -300, -5), pos.add(5, 3000, 5));
-    }
+	public EntityElevatorCapsule getCapsuleOnLine() {
 
-    @Override
-    public boolean shouldHideBlock(World world, BlockPos pos, IBlockState tile) {
-        return true;
-    }
+		if(capsule != null && capsule.isDead)
+			capsule = null;
 
-    @Override
-    public List<ModuleBase> getModules(int ID, EntityPlayer player) {
-        List<ModuleBase> modules = super.getModules(ID, player);
+		double capsulePosX = getLandingLocationX();
+		double capsulePosZ = getLandingLocationZ();
+		for (EntityElevatorCapsule e :world.getEntitiesWithinAABB(EntityElevatorCapsule.class, new AxisAlignedBB(capsulePosX - 3, 0, capsulePosZ - 3, capsulePosX + 3, EntityElevatorCapsule.MAX_HEIGHT, capsulePosZ + 3))) {
+			if(!e.isInMotion() && !e.isDead)
+				capsule = e;
+		}
 
-        if (ID == GuiHandler.guiId.MODULAR.ordinal()) {
-            modules.add(new ModuleButton(50, 47, 1, LibVulpes.proxy.getLocalizedString("msg.spaceElevator.button.summon"), this, TextureResources.buttonBuild, 80, 18));
-            if (isTetherConnected()) {
-                modules.add(new ModuleText(30, 23, LibVulpes.proxy.getLocalizedString("msg.spaceElevator.warning.anchored0"), 0x2d2d2d));
-                modules.add(new ModuleText(30, 35, LibVulpes.proxy.getLocalizedString("msg.spaceElevator.warning.anchored1"), 0x2d2d2d));
-            } else {
-                modules.add(new ModuleText(30, 32, LibVulpes.proxy.getLocalizedString("msg.spaceElevator.warning.unanchored"), 0x2d2d2d));
-            }
-        }
+		return capsule;
+	}
 
-        return modules;
-    }
+	public double getLandingLocationX() {
+		EnumFacing facing = RotatableBlock.getFront(world.getBlockState(getPos()));
+		return getPos().getX() + facing.getFrontOffsetX()*-5 - facing.getFrontOffsetZ()*2 + 0.5;
+	}
 
-    public boolean attemptLaunch() {
-        if (!isComplete() || !enabled || !hasEnergy(50000))
-            return false;
-        useEnergy(50000);
-        return true;
-    }
-
-    @Override
-    @SideOnly(Side.CLIENT)
-    public void onInventoryButtonPressed(int buttonId) {
-        if (buttonId == 1) {
-            PacketHandler.sendToServer(new PacketMachine(this, SUMMON_PACKET));
-        }
-        if (buttonId >= BUTTON_ID_OFFSET) {
-            PacketHandler.sendToServer(new PacketMachine(this, (byte) buttonId));
-        }
-        super.onInventoryButtonPressed(buttonId);
-    }
-
-    public void notifyLanded(EntityElevatorCapsule e) {
-        if (capsule != null && capsule != e && !capsule.isDead)
-            e.setDead();
-        else {
-            capsule = e;
-            capsule.setSourceTile(new DimensionBlockPosition(world.provider.getDimension(), new HashedBlockPosition(pos)));
-            capsule.setDst(dimBlockPos);
-        }
-
-        int yOffset = (isAnchorOnSpaceStation()) ? -5 : 1;
-        capsule.setPosition(getLandingLocationX(), getPos().getY() + yOffset, getLandingLocationZ());
-
-        rotateCapsule();
-    }
-
-    @Override
-    public void useNetworkData(EntityPlayer player, Side side, byte id,
-                               NBTTagCompound nbt) {
-
-        if (id == SUMMON_PACKET) {
-            summonCapsule();
-        } else if (id == BUTTON_ID_OFFSET) {
-            dimBlockPos = null;
-            capsule.setDst(null);
-
-            markDirty();
-            world.notifyBlockUpdate(pos, world.getBlockState(pos), world.getBlockState(pos), 3);
-        }
-        super.useNetworkData(player, side, id, nbt);
-    }
-
-    public EntityElevatorCapsule getCapsuleOnLine() {
-
-        if (capsule != null && capsule.isDead)
-            capsule = null;
-
-        double capsulePosX = getLandingLocationX();
-        double capsulePosZ = getLandingLocationZ();
-        for (EntityElevatorCapsule e : world.getEntitiesWithinAABB(EntityElevatorCapsule.class, new AxisAlignedBB(capsulePosX - 3, 0, capsulePosZ - 3, capsulePosX + 3, EntityElevatorCapsule.MAX_HEIGHT, capsulePosZ + 3))) {
-            if (!e.isDead) {
-                capsule = e;
-                break;
-            }
-        }
-
-        return capsule;
-    }
-
-    public double getLandingLocationX() {
-        EnumFacing facing = RotatableBlock.getFront(world.getBlockState(getPos()));
-        return getPos().getX() + facing.getFrontOffsetX() * -5 - facing.getFrontOffsetZ() * 2 + 0.5;
-    }
-
-    public double getLandingLocationZ() {
-        EnumFacing facing = RotatableBlock.getFront(world.getBlockState(getPos()));
-        return getPos().getZ() + facing.getFrontOffsetX() * 2 + facing.getFrontOffsetZ() * -5 + 0.5;
-    }
-
-    public void rotateCapsule() {
-        EnumFacing facing = RotatableBlock.getFront(world.getBlockState(getPos()));
-        switch (facing) {
-            case EAST:
-                capsule.rotationYaw = 180;
-                break;
-            case SOUTH:
-                capsule.rotationYaw = 90;
-                break;
-            case NORTH:
-                capsule.rotationYaw = 270;
-                break;
-            default:
-                capsule.rotationYaw = 0;
-        }
-    }
-
-    public void summonCapsule() {
-
-        if (!isTetherConnected())
-            return;
-        // If a capsule exists, delete the existing one and create a new one
-        while (getCapsuleOnLine() != null){
-            getCapsuleOnLine().setDead();
-        }
-        // also check for the other elevator if there is a capsule
-        World otherPlanet;
-        if ((otherPlanet = DimensionManager.getWorld(dimBlockPos.dimid)) == null) {
-            DimensionManager.initDimension(dimBlockPos.dimid);
-            otherPlanet = DimensionManager.getWorld(dimBlockPos.dimid);
-        }
-
-        if (otherPlanet != null) {
-            TileEntity tile = otherPlanet.getTileEntity(dimBlockPos.pos.getBlockPos());
-            if (tile instanceof TileSpaceElevator) {
-                if (((TileSpaceElevator) tile).getCapsuleOnLine() != null) {((TileSpaceElevator) tile).getCapsuleOnLine().setDead();}
-            }
-        }
+	public double getLandingLocationZ() {
+		EnumFacing facing = RotatableBlock.getFront(world.getBlockState(getPos()));
+		return getPos().getZ() + facing.getFrontOffsetX()*2 + facing.getFrontOffsetZ()*-5 + 0.5;
+	}
 
 
-        capsule = new EntityElevatorCapsule(world);
-        rotateCapsule();
+	public void summonCapsule() {
+		//Don't spawn a new capsule if one exists
+		if(getCapsuleOnLine() != null || !isTetherConnected())
+			return;
 
-        double capsulePosX = getLandingLocationX();
-        double capsulePosZ = getLandingLocationZ();
-        int yOffset = (isAnchorOnSpaceStation()) ? -4 : 1;
-        capsule.setPosition(capsulePosX, getPos().getY() + yOffset, capsulePosZ);
+		capsule = new EntityElevatorCapsule(world);
+		EnumFacing facing = RotatableBlock.getFront(world.getBlockState(getPos()));
+		switch(facing) {
+		case EAST:
+			capsule.rotationYaw = 180;
+			break;
+		case SOUTH:
+			capsule.rotationYaw = 90;
+			break;
+		case NORTH:
+			capsule.rotationYaw = 270;
+			break;
+		default:
+			capsule.rotationYaw = 0;
+		}
 
-        capsule.setDst(dimBlockPos);
-        capsule.setSourceTile(new DimensionBlockPosition(world.provider.getDimension(), new HashedBlockPosition(this.getPos())));
+		double capsulePosX = getLandingLocationX();
+		double capsulePosZ = getLandingLocationZ();
+		int yOffset = (isAnchorOnSpaceStation()) ? - 4 : 1;
+		capsule.setPosition(capsulePosX, getPos().getY() + yOffset, capsulePosZ);
 
-        world.spawnEntity(capsule);
-    }
+		capsule.setDst(dimBlockPos);
+		capsule.setSourceTile(new DimensionBlockPosition(world.provider.getDimension(), new HashedBlockPosition(this.getPos())));
 
-    @Override
-    public boolean onLinkStart(@Nonnull ItemStack item, TileEntity entity, EntityPlayer player, World world) {
-        ItemLinker.setMasterCoords(item, this.getPos());
-        ItemLinker.setDimId(item, world.provider.getDimension());
-        if (dimBlockPos != null) {
-            player.sendMessage(new TextComponentTranslation("msg.spaceElevator.linkCannotChangeError"));
-            return false;
-        }
-        if (!world.isRemote)
-            player.sendMessage(new TextComponentTranslation("msg.linker.program"));
-        return true;
-    }
+		world.spawnEntity(capsule);
+	}
 
-    @Override
-    public boolean onLinkComplete(@Nonnull ItemStack item, TileEntity entity, EntityPlayer player, World myWorld) {
-        if (!myWorld.isRemote) {
+	@Override
+	public boolean onLinkStart(@Nonnull ItemStack item, TileEntity entity,
+							   EntityPlayer player, World world) {
+		ItemLinker.setMasterCoords(item, this.getPos());
+		ItemLinker.setDimId(item, world.provider.getDimension());
+		if(dimBlockPos != null) {
+			player.sendMessage(new TextComponentTranslation("msg.spaceElevator.linkCannotChangeError"));
+			return false;
+		}
+		if(!world.isRemote)
+			player.sendMessage(new TextComponentTranslation("msg.linker.program"));
+		return true;
+	}
 
-            int dimid = ItemLinker.getDimId(item);
-            BlockPos pos = ItemLinker.getMasterCoords(item);
+	@Override
+	public boolean onLinkComplete(@Nonnull ItemStack item, TileEntity entity,
+			EntityPlayer player, World myWorld) {
 
-            DimensionBlockPosition dimPos = new DimensionBlockPosition(dimid, new HashedBlockPosition(pos));
+		if(!myWorld.isRemote) {
 
-            if (dimPos.dimid == world.provider.getDimension()) {
-                player.sendMessage(new TextComponentTranslation("msg.spaceElevator.sameDimensionError"));
-                return false;
-            }
+			int dimid = ItemLinker.getDimId(item);
+			BlockPos pos = ItemLinker.getMasterCoords(item);
 
-            World world;
-            if ((world = DimensionManager.getWorld(dimPos.dimid)) == null) {
-                DimensionManager.initDimension(dimPos.dimid);
-                world = DimensionManager.getWorld(dimPos.dimid);
-            }
+			DimensionBlockPosition dimPos = new DimensionBlockPosition(dimid, new HashedBlockPosition(pos));
 
-            if (!isDestinationValid(dimPos.dimid, dimPos, new HashedBlockPosition(getPos()), myWorld.provider.getDimension())) {
-                player.sendMessage(new TextComponentTranslation("msg.spaceElevator.linkNotGeostationaryError"));
-                return false;
-            }
+			if(dimPos.dimid == world.provider.getDimension())
+			{
+				player.sendMessage(new TextComponentTranslation("msg.spaceElevator.sameDimensionError"));
+				return false;
+			}
 
-            if (wouldTetherBreakOnConnect(dimPos.dimid, dimPos, new HashedBlockPosition(getPos()), myWorld.provider.getDimension())) {
-                player.sendMessage(new TextComponentTranslation("msg.spaceElevator.tetherWouldBreakError"));
-                return false;
-            }
 
-            if (dimBlockPos != null) {
-                player.sendMessage(new TextComponentTranslation("msg.spaceElevator.linkCannotChangeError"));
-                return false;
-            }
+			World world;
+			if((world = DimensionManager.getWorld(dimPos.dimid)) == null) {
+				DimensionManager.initDimension(dimPos.dimid);
+				world = DimensionManager.getWorld(dimPos.dimid);
+			}
 
-            if (world != null) {
-                TileEntity tile = world.getTileEntity(dimPos.pos.getBlockPos());
-                if (tile instanceof TileSpaceElevator) {
-                    updateTetherLinkPosition(new DimensionBlockPosition(this.world.provider.getDimension(), new HashedBlockPosition(getPos())), dimPos);
-                    ((TileSpaceElevator) tile).updateTetherLinkPosition(dimPos, new DimensionBlockPosition(this.world.provider.getDimension(), new HashedBlockPosition(getPos())));
-                    player.sendMessage(new TextComponentTranslation("msg.spaceElevator.newDstAdded"));
+			if(!isDestinationValid(dimPos.dimid, dimPos, new HashedBlockPosition(getPos()), myWorld.provider.getDimension())) {
+				player.sendMessage(new TextComponentTranslation("msg.spaceElevator.linkNotGeostationaryError"));
+				return false;
+			}
 
-                    if (capsule != null) {
-                        capsule.setDst(dimBlockPos);
-                    }
-                    this.markDirty();
-                    this.world.notifyBlockUpdate(pos, world.getBlockState(pos), world.getBlockState(pos), 3);
-                    this.isTetherConnected = true;
+			if(wouldTetherBreakOnConnect(dimPos.dimid, dimPos, new HashedBlockPosition(getPos()), myWorld.provider.getDimension())) {
+				player.sendMessage(new TextComponentTranslation("msg.spaceElevator.tetherWouldBreakError"));
+				return false;
+			}
 
-                    return true;
-                }
-            }
+			if(dimBlockPos != null) {
+				player.sendMessage(new TextComponentTranslation("msg.spaceElevator.linkCannotChangeError"));
+				return false;
+			}
 
-        }
+			if(world != null) {
+				TileEntity tile = world.getTileEntity(dimPos.pos.getBlockPos());
+				if(tile instanceof TileSpaceElevator) {
+					updateTetherLinkPosition(new DimensionBlockPosition(this.world.provider.getDimension(), new HashedBlockPosition(getPos())), dimPos);
+					((TileSpaceElevator) tile).updateTetherLinkPosition(dimPos, new DimensionBlockPosition(this.world.provider.getDimension(), new HashedBlockPosition(getPos())));
+					player.sendMessage(new TextComponentTranslation("msg.spaceElevator.newDstAdded"));
 
-        return false;
-    }
+					if (capsule != null) {
+						capsule.setDst(dimBlockPos);
+					}
+					this.markDirty();
+					this.world.notifyBlockUpdate(pos, world.getBlockState(pos),  world.getBlockState(pos), 3);
+					this.isTetherConnected = true;
 
-    public boolean isAnchorOnSpaceStation() {
-        return world.provider.getDimension() == ARConfiguration.getCurrentConfig().spaceDimId;
-    }
+					return true;
+				}
+			}
 
-    public void updateTetherLinkPosition(DimensionBlockPosition myPosition, DimensionBlockPosition dimensionBlockPosition) {
-        if (myPosition.dimid == ARConfiguration.getCurrentConfig().spaceDimId && SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPosition.pos.getBlockPos()) != null) {
-            if (dimensionBlockPosition != null) {
-                SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPosition.pos.getBlockPos()).setDeltaRotation(0, EnumFacing.EAST);
-                SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPosition.pos.getBlockPos()).setDeltaRotation(0, EnumFacing.UP);
-                SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPosition.pos.getBlockPos()).setDeltaRotation(0, EnumFacing.NORTH);
-            }
-            SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPosition.pos.getBlockPos()).setIsAnchored(dimensionBlockPosition != null);
-        }
-        if (dimensionBlockPosition == null){
-            isTetherConnected = false;
-            Entity entity = getCapsuleOnLine();
+		}
 
-            if (entity != null) {
-                entity.setDead();
-            }
-        }
-        else
-            isTetherConnected = true;
+		return false;
+	}
 
-        dimBlockPos = dimensionBlockPosition;
-    }
+	public boolean isAnchorOnSpaceStation() {
+		return world.provider.getDimension() == ARConfiguration.getCurrentConfig().spaceDimId;
+	}
 
-    public boolean isTetherConnected() {
-        return isTetherConnected;
-    }
+	public void updateTetherLinkPosition(DimensionBlockPosition myPosition, DimensionBlockPosition dimensionBlockPosition) {
+		if (myPosition.dimid == ARConfiguration.getCurrentConfig().spaceDimId && SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPosition.pos.getBlockPos()) != null) {
+			if (dimensionBlockPosition != null) {
+				SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPosition.pos.getBlockPos()).setDeltaRotation(0, EnumFacing.EAST);
+				SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPosition.pos.getBlockPos()).setDeltaRotation( 0, EnumFacing.UP);
+				SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPosition.pos.getBlockPos()).setDeltaRotation( 0, EnumFacing.NORTH);
+			}
+			SpaceObjectManager.getSpaceManager().getSpaceStationFromBlockCoords(myPosition.pos.getBlockPos()).setIsAnchored(dimensionBlockPosition != null);
+		}
+		dimBlockPos = dimensionBlockPosition;
+	}
 
-    @Override
-    public String getModularInventoryName() {
-        return AdvancedRocketryBlocks.blockSpaceElevatorController.getLocalizedName();
-    }
+	public boolean isTetherConnected() {
+		return isTetherConnected;
+	}
 
-    @Override
-    public boolean isUsableByPlayer(EntityPlayer player) {
-        return true;
-    }
+	@Override
+	public String getModularInventoryName() { return AdvancedRocketryBlocks.blockSpaceElevatorController.getLocalizedName(); }
 
-    @Override
-    public void writeNetworkData(NBTTagCompound nbt) {
-        if (dimBlockPos != null) {
-            nbt.setInteger("dstDimId", dimBlockPos.dimid);
-            nbt.setIntArray("dstPos", new int[]{dimBlockPos.pos.x, dimBlockPos.pos.y, dimBlockPos.pos.z});
-            nbt.setBoolean("tether", isTetherConnected);
-            super.writeNetworkData(nbt);
-        } else
+	@Override
+	public boolean isUsableByPlayer(EntityPlayer player) {
+		return true;
+	}
 
-            super.writeNetworkData(nbt);
-    }
+	@Override
+	public void writeNetworkData(NBTTagCompound nbt) {
+		if(dimBlockPos != null) {
+			nbt.setInteger("dstDimId", dimBlockPos.dimid);
+			nbt.setIntArray("dstPos", new int[] { dimBlockPos.pos.x, dimBlockPos.pos.y, dimBlockPos.pos.z });
+			nbt.setBoolean("tether", isTetherConnected);
+		} else
 
-    @Override
-    public void readFromNBT(NBTTagCompound nbt) {
-        super.readFromNBT(nbt);
-    }
+		super.writeNetworkData(nbt);
+	}
 
-    @Override
-    public void readNetworkData(NBTTagCompound nbt) {
-        super.readNetworkData(nbt);
-        if (nbt.hasKey("dstDimId")) {
-            int id = nbt.getInteger("dstDimId");
-            int[] pos = nbt.getIntArray("dstPos");
-            dimBlockPos = new DimensionBlockPosition(id, new HashedBlockPosition(pos[0], pos[1], pos[2]));
-        } else
-            dimBlockPos = null;
-        isTetherConnected = nbt.getBoolean("tether");
+	@Override
+	public void readFromNBT(NBTTagCompound nbt) {
+		super.readFromNBT(nbt);
+	}
 
-        landingPadDisplayText.setText(dimBlockPos != null ? dimBlockPos.toString() : LibVulpes.proxy.getLocalizedString("msg.label.noneSelected"));
-    }
+	@Override
+	public void readNetworkData(NBTTagCompound nbt) {
+		super.readNetworkData(nbt);
+		if(nbt.hasKey("dstDimId")) {
+			int id = nbt.getInteger("dstDimId");
+			int[] pos = nbt.getIntArray("dstPos");
+			dimBlockPos = new DimensionBlockPosition(id, new HashedBlockPosition(pos[0], pos[1], pos[2]));
+		}
+		else
+			dimBlockPos = null;
+		isTetherConnected = nbt.getBoolean("tether");
+
+		landingPadDisplayText.setText(dimBlockPos != null ? dimBlockPos.toString() : LibVulpes.proxy.getLocalizedString("msg.label.noneSelected"));
+	}
 }

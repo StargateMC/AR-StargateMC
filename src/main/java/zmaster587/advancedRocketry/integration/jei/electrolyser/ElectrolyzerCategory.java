@@ -8,22 +8,23 @@ import zmaster587.libVulpes.LibVulpes;
 
 public class ElectrolyzerCategory extends MachineCategoryTemplate<ElectrolyzerWrapper> {
 
-    public ElectrolyzerCategory(IGuiHelper helper) {
-        super(helper, TextureResources.crystallizerProgressBar);
-    }
+	public ElectrolyzerCategory(IGuiHelper helper) {
+		super(helper, TextureResources.crystallizerProgressBar);
+	}
+	
+	@Override
+	public String getUid() {
+		return ARPlugin.electrolyzerUUID;
+	}
+
+	@Override
+	public String getTitle() {
+		return LibVulpes.proxy.getLocalizedString("tile.electrolyser.name");
+	}
 
     @Override
-    public String getUid() {
-        return ARPlugin.electrolyzerUUID;
-    }
-
-    @Override
-    public String getTitle() {
-        return LibVulpes.proxy.getLocalizedString("tile.electrolyser.name");
-    }
-
-    @Override
-    public String getModName() {
+    public String getModName()
+    {
         return "Advanced Rocketry";
     }
 

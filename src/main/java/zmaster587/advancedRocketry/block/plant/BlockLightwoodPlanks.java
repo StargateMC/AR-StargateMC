@@ -6,12 +6,19 @@ import net.minecraft.block.material.Material;
 import net.minecraft.block.properties.PropertyEnum;
 import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.IStringSerializable;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
-public class BlockLightwoodPlanks extends Block {
+import java.util.List;
 
-    public static final PropertyEnum<BlockLightwoodPlanks.EnumType> VARIANT = PropertyEnum.create("variant", BlockLightwoodPlanks.EnumType.class);
-
+public class BlockLightwoodPlanks extends Block  {
+	
+	public static final PropertyEnum<BlockLightwoodPlanks.EnumType> VARIANT = PropertyEnum.create("variant", BlockLightwoodPlanks.EnumType.class);
+	
     public BlockLightwoodPlanks() {
         super(Material.WOOD);
         this.setLightLevel(4);
@@ -22,7 +29,8 @@ public class BlockLightwoodPlanks extends Block {
      * Gets the metadata of the item this Block can drop. This method is called when the block gets destroyed. It
      * returns the metadata of the dropped item based on the old metadata of the block.
      */
-    public int damageDropped(IBlockState state) {
+    public int damageDropped(IBlockState state)
+    {
         return state.getValue(VARIANT).getMetadata();
     }
 
@@ -36,18 +44,21 @@ public class BlockLightwoodPlanks extends Block {
     /**
      * Get the MapColor for this Block and the given BlockState
      */
-    public MapColor getMapColor(IBlockState state) {
+    public MapColor getMapColor(IBlockState state)
+    {
         return state.getValue(VARIANT).getMapColor();
     }
 
     /**
      * Convert the BlockState into the correct metadata value
      */
-    public int getMetaFromState(IBlockState state) {
+    public int getMetaFromState(IBlockState state)
+    {
         return state.getValue(VARIANT).getMetadata();
     }
 
-    protected BlockStateContainer createBlockState() {
+    protected BlockStateContainer createBlockState()
+    {
         return new BlockStateContainer(this, VARIANT);
     }
 
@@ -55,19 +66,10 @@ public class BlockLightwoodPlanks extends Block {
         ALIEN(0, "alien", "alien", MapColor.LAPIS);
 
         private static final BlockLightwoodPlanks.EnumType[] META_LOOKUP = new BlockLightwoodPlanks.EnumType[values().length];
-
-        static {
-            for (BlockLightwoodPlanks.EnumType blockalienplank$enumtype : values()) {
-                META_LOOKUP[blockalienplank$enumtype.getMetadata()] = blockalienplank$enumtype;
-            }
-        }
-
         private final int meta;
         private final String name;
         private final String unlocalizedName;
-        /**
-         * The color that represents this entry on a map.
-         */
+        /** The color that represents this entry on a map. */
         private final MapColor mapColor;
 
         EnumType(int metaIn, String nameIn, String unlocalizedNameIn, MapColor mapColorIn) {
@@ -75,6 +77,24 @@ public class BlockLightwoodPlanks extends Block {
             this.name = nameIn;
             this.unlocalizedName = unlocalizedNameIn;
             this.mapColor = mapColorIn;
+        }
+
+        public int getMetadata()
+        {
+            return this.meta;
+        }
+
+        /**
+         * The color which represents this entry on a map.
+         */
+        public MapColor getMapColor()
+        {
+            return this.mapColor;
+        }
+
+        public String toString()
+        {
+            return this.name;
         }
 
         public static BlockLightwoodPlanks.EnumType byMetadata(int meta) {
@@ -85,27 +105,20 @@ public class BlockLightwoodPlanks extends Block {
             return META_LOOKUP[meta];
         }
 
-        public int getMetadata() {
-            return this.meta;
-        }
-
-        /**
-         * The color which represents this entry on a map.
-         */
-        public MapColor getMapColor() {
-            return this.mapColor;
-        }
-
-        public String toString() {
+        public String getName()
+        {
             return this.name;
         }
 
-        public String getName() {
-            return this.name;
-        }
-
-        public String getUnlocalizedName() {
+        public String getUnlocalizedName()
+        {
             return this.unlocalizedName;
+        }
+
+        static {
+            for (BlockLightwoodPlanks.EnumType blockalienplank$enumtype : values()) {
+                META_LOOKUP[blockalienplank$enumtype.getMetadata()] = blockalienplank$enumtype;
+            }
         }
     }
 }

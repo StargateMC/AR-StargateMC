@@ -37,339 +37,343 @@ import zmaster587.libVulpes.util.ZUtils.RedstoneState;
 import javax.annotation.Nonnull;
 import java.util.List;
 
-public class TileRocketLoader extends TileInventoryHatch implements IInfrastructure, ITickable, IButtonInventory, INetworkMachine, IGuiCallback {
+public class TileRocketLoader extends TileInventoryHatch implements IInfrastructure, ITickable,  IButtonInventory, INetworkMachine, IGuiCallback  {
 
-    private final static int ALLOW_REDSTONEOUT = 2;
-    EntityRocket rocket;
-    ModuleRedstoneOutputButton redstoneControl;
-    RedstoneState state;
-    ModuleRedstoneOutputButton inputRedstoneControl;
-    RedstoneState inputstate;
-    ModuleBlockSideSelector sideSelectorModule;
+	EntityRocket rocket;
+	ModuleRedstoneOutputButton redstoneControl;
+	RedstoneState state;
+	ModuleRedstoneOutputButton inputRedstoneControl;
+	RedstoneState inputstate;
+	ModuleBlockSideSelector sideSelectorModule;
 
-    public TileRocketLoader() {
-        redstoneControl = new ModuleRedstoneOutputButton(174, 4, 0, "", this, LibVulpes.proxy.getLocalizedString("msg.rocketLoader.loadingState"));
-        state = RedstoneState.ON;
-        inputRedstoneControl = new ModuleRedstoneOutputButton(174, 32, 1, "", this, LibVulpes.proxy.getLocalizedString("msg.rocketLoader.allowLoading"));
-        inputstate = RedstoneState.OFF;
-        inputRedstoneControl.setRedstoneState(inputstate);
-        sideSelectorModule = new ModuleBlockSideSelector(90, 15, this, LibVulpes.proxy.getLocalizedString("msg.rocketLoader.none"), LibVulpes.proxy.getLocalizedString("msg.rocketLoader.allowredstoneoutput"), LibVulpes.proxy.getLocalizedString("msg.rocketLoader.allowredstoneinput"));
-    }
+	private final static int ALLOW_REDSTONEOUT = 2;
 
-    public TileRocketLoader(int size) {
-        super(size);
-        inventory.setCanInsertSlot(0, true);
-        inventory.setCanInsertSlot(1, true);
-        inventory.setCanInsertSlot(2, true);
-        inventory.setCanInsertSlot(3, true);
-        inventory.setCanExtractSlot(0, false);
-        inventory.setCanExtractSlot(1, false);
-        inventory.setCanExtractSlot(2, false);
-        inventory.setCanExtractSlot(3, false);
-        redstoneControl = new ModuleRedstoneOutputButton(174, 4, 0, "", this, LibVulpes.proxy.getLocalizedString("msg.rocketLoader.loadingState"));
-        state = RedstoneState.ON;
-        inputRedstoneControl = new ModuleRedstoneOutputButton(174, 32, 1, "", this, LibVulpes.proxy.getLocalizedString("msg.rocketLoader.allowLoading"));
-        inputstate = RedstoneState.OFF;
-        inputRedstoneControl.setRedstoneState(inputstate);
-        sideSelectorModule = new ModuleBlockSideSelector(90, 15, this, LibVulpes.proxy.getLocalizedString("msg.rocketLoader.none"), LibVulpes.proxy.getLocalizedString("msg.rocketLoader.allowredstoneoutput"), LibVulpes.proxy.getLocalizedString("msg.rocketLoader.allowredstoneinput"));
+	public TileRocketLoader() {
+		redstoneControl = new ModuleRedstoneOutputButton(174, 4, 0, "", this, LibVulpes.proxy.getLocalizedString("msg.rocketLoader.loadingState"));
+		state = RedstoneState.ON;
+		inputRedstoneControl = new ModuleRedstoneOutputButton(174, 32, 1, "", this, LibVulpes.proxy.getLocalizedString("msg.rocketLoader.allowLoading"));
+		inputstate = RedstoneState.OFF;
+		inputRedstoneControl.setRedstoneState(inputstate);
+		sideSelectorModule = new ModuleBlockSideSelector(90, 15, this, LibVulpes.proxy.getLocalizedString("msg.rocketLoader.none"), LibVulpes.proxy.getLocalizedString("msg.rocketLoader.allowredstoneoutput"), LibVulpes.proxy.getLocalizedString("msg.rocketLoader.allowredstoneinput"));
+	}
 
-    }
+	public TileRocketLoader(int size) {
+		super(size);
+		inventory.setCanInsertSlot(0, true);
+		inventory.setCanInsertSlot(1, true);
+		inventory.setCanInsertSlot(2, true);
+		inventory.setCanInsertSlot(3, true);
+		inventory.setCanExtractSlot(0, false);
+		inventory.setCanExtractSlot(1, false);
+		inventory.setCanExtractSlot(2, false);
+		inventory.setCanExtractSlot(3, false);
+		redstoneControl = new ModuleRedstoneOutputButton(174, 4, 0, "", this, LibVulpes.proxy.getLocalizedString("msg.rocketLoader.loadingState"));
+		state = RedstoneState.ON;
+		inputRedstoneControl = new ModuleRedstoneOutputButton(174, 32, 1, "", this, LibVulpes.proxy.getLocalizedString("msg.rocketLoader.allowLoading"));
+		inputstate = RedstoneState.OFF;
+		inputRedstoneControl.setRedstoneState(inputstate);
+		sideSelectorModule = new ModuleBlockSideSelector(90, 15, this, LibVulpes.proxy.getLocalizedString("msg.rocketLoader.none"), LibVulpes.proxy.getLocalizedString("msg.rocketLoader.allowredstoneoutput"), LibVulpes.proxy.getLocalizedString("msg.rocketLoader.allowredstoneinput"));
 
-    @Override
-    public void invalidate() {
-        super.invalidate();
-        if (getMasterBlock() instanceof TileRocketAssemblingMachine)
-            ((TileRocketAssemblingMachine) getMasterBlock()).removeConnectedInfrastructure(this);
-    }
+	}
 
-    @Override
-    public String getModularInventoryName() {
-        return "tile.loader.3.name";
-    }
+	@Override
+	public void invalidate() {
+		super.invalidate();
+		if(getMasterBlock() instanceof TileRocketAssemblingMachine)
+			((TileRocketAssemblingMachine)getMasterBlock()).removeConnectedInfrastructure(this);
+	}
 
-    @Override
-    public boolean allowRedstoneOutputOnSide(EnumFacing facing) {
-        return sideSelectorModule.getStateForSide(facing.getOpposite()) == 1;
-    }
+	@Override
+	public String getModularInventoryName() {
+		return "tile.loader.3.name";
+	}
 
-    @Override
-    public List<ModuleBase> getModules(int ID, EntityPlayer player) {
-        List<ModuleBase> list = super.getModules(ID, player);
-        list.add(redstoneControl);
-        list.add(inputRedstoneControl);
-        list.add(sideSelectorModule);
-        return list;
-    }
+	@Override
+	public boolean allowRedstoneOutputOnSide(EnumFacing facing) {
+		return sideSelectorModule.getStateForSide(facing.getOpposite()) == 1;
+	}
 
-    protected boolean getStrongPowerForSides(World world, BlockPos pos) {
-        for (int i = 0; i < 6; i++) {
-            if (sideSelectorModule.getStateForSide(i) == ALLOW_REDSTONEOUT && world.getRedstonePower(pos.offset(EnumFacing.VALUES[i]), EnumFacing.VALUES[i]) > 0)
-                return true;
-        }
-        return false;
-    }
+	@Override
+	public List<ModuleBase> getModules(int ID, EntityPlayer player) {
+		List<ModuleBase> list = super.getModules(ID, player);
+		list.add(redstoneControl);
+		list.add(inputRedstoneControl);
+		list.add(sideSelectorModule);
+		return list;
+	}
 
-    @Override
-    public void update() {
-        //Move a stack of items
-        if (!world.isRemote && rocket != null) {
+	protected boolean getStrongPowerForSides(World world, BlockPos pos) {
+		for(int i = 0; i < 6; i++) {
+			if(sideSelectorModule.getStateForSide(i) == ALLOW_REDSTONEOUT && world.getRedstonePower(pos.offset(EnumFacing.VALUES[i]), EnumFacing.VALUES[i]) > 0)
+				return true;
+		}
+		return false;
+	}
 
-            boolean isAllowedToOperate = (inputstate == RedstoneState.OFF || isStateActive(inputstate, getStrongPowerForSides(world, getPos())));
+	@Override
+	public void update() {
+		//Move a stack of items
+		if(!world.isRemote && rocket != null ) {
 
-            List<TileEntity> tiles = rocket.storage.getInventoryTiles();
-            boolean foundStack = false;
-            boolean rocketContainsItems = false;
-            out:
-            //Function returns if something can be moved
-            for (TileEntity tile : tiles) {
-                if (tile.hasCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, EnumFacing.UP)) {
-                    IItemHandler inv = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, EnumFacing.UP);
+			boolean isAllowedToOperate = (inputstate == RedstoneState.OFF || isStateActive(inputstate, getStrongPowerForSides(world, getPos())));
 
-                    for (int i = 0; i < inv.getSlots(); i++) {
-                        if (inv.getStackInSlot(i).isEmpty())
-                            rocketContainsItems = true;
+			List<TileEntity> tiles = rocket.storage.getInventoryTiles();
+			boolean foundStack = false;
+			boolean rocketContainsItems = false;
+			out:
+				//Function returns if something can be moved
+				for(TileEntity tile : tiles) {
+					if(tile.hasCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, EnumFacing.UP)) {
+						IItemHandler inv = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, EnumFacing.UP);
 
-                        //Loop though this inventory's slots and find a suitible one
-                        for (int j = 0; j < getSizeInventory(); j++) {
-                            if ((inv.getStackInSlot(i).isEmpty()) && !inventory.getStackInSlot(j).isEmpty()) {
-                                if (isAllowedToOperate) {
-                                    inv.insertItem(i, inventory.getStackInSlot(j), false);
-                                    inventory.setInventorySlotContents(j, ItemStack.EMPTY);
-                                }
-                                rocketContainsItems = true;
-                                break out;
-                            } else if (!getStackInSlot(j).isEmpty() && inv.getStackInSlot(i).getItem() == getStackInSlot(j).getItem() &&
-                                    ItemStack.areItemStackTagsEqual(inv.getStackInSlot(i), getStackInSlot(j)) && inv.getStackInSlot(i).getMaxStackSize() != inv.getStackInSlot(i).getCount()) {
-                                if (isAllowedToOperate) {
-                                    ItemStack stack2 = inventory.decrStackSize(j, inv.getStackInSlot(i).getMaxStackSize() - inv.getStackInSlot(i).getCount());
-                                    inv.getStackInSlot(i).setCount(inv.getStackInSlot(i).getCount() + stack2.getCount());
-                                }
-                                rocketContainsItems = true;
+						for(int i = 0; i < inv.getSlots(); i++) {
+							if(inv.getStackInSlot(i).isEmpty())
+								rocketContainsItems = true;
 
-                                if (inventory.getStackInSlot(j).isEmpty())
-                                    break out;
+							//Loop though this inventory's slots and find a suitible one
+							for(int j = 0; j < getSizeInventory(); j++) {
+								if((inv.getStackInSlot(i).isEmpty()) && !inventory.getStackInSlot(j).isEmpty()) {
+									if(isAllowedToOperate) {
+										inv.insertItem(i, inventory.getStackInSlot(j), false);
+										inventory.setInventorySlotContents(j,ItemStack.EMPTY);
+									}
+									rocketContainsItems = true;
+									break out;
+								}
+								else if(!getStackInSlot(j).isEmpty() && inv.getStackInSlot(i).getItem() == getStackInSlot(j).getItem() &&
+										ItemStack.areItemStackTagsEqual(inv.getStackInSlot(i), getStackInSlot(j)) && inv.getStackInSlot(i).getMaxStackSize() != inv.getStackInSlot(i).getCount() ) {
+									if(isAllowedToOperate) {
+										ItemStack stack2 = inventory.decrStackSize(j, inv.getStackInSlot(i).getMaxStackSize() - inv.getStackInSlot(i).getCount());
+										inv.getStackInSlot(i).setCount(inv.getStackInSlot(i).getCount() + stack2.getCount());
+									}
+									rocketContainsItems = true;
 
-                                foundStack = true;
-                            }
-                        }
-                        if (foundStack)
-                            break out;
-                    }
-                } else {
-                    if (tile instanceof IInventory && !(tile instanceof TileGuidanceComputer)) {
-                        IInventory inv = ((IInventory) tile);
+									if(inventory.getStackInSlot(j).isEmpty())
+										break out;
 
-                        for (int i = 0; i < inv.getSizeInventory(); i++) {
-                            if (inv.getStackInSlot(i).isEmpty())
-                                rocketContainsItems = true;
+									foundStack = true;
+								}
+							}
+							if(foundStack)
+								break out;
+						}
+					}
+					else {
+						if(tile instanceof IInventory && !(tile instanceof TileGuidanceComputer)) {
+							IInventory inv = ((IInventory)tile);
 
-                            //Loop though this inventory's slots and find a suitible one
-                            for (int j = 0; j < getSizeInventory(); j++) {
-                                if ((inv.getStackInSlot(i).isEmpty()) && !inventory.getStackInSlot(j).isEmpty()) {
-                                    if (isAllowedToOperate) {
-                                        inv.setInventorySlotContents(i, inventory.getStackInSlot(j));
-                                        inventory.setInventorySlotContents(j, ItemStack.EMPTY);
-                                    }
-                                    rocketContainsItems = true;
-                                    break out;
-                                } else if (!getStackInSlot(j).isEmpty() && inv.isItemValidForSlot(i, getStackInSlot(j)) && inv.getStackInSlot(i).getItem() == getStackInSlot(j).getItem() &&
-                                        ItemStack.areItemStackTagsEqual(inv.getStackInSlot(i), getStackInSlot(j)) && inv.getStackInSlot(i).getMaxStackSize() != inv.getStackInSlot(i).getCount()) {
-                                    if (isAllowedToOperate) {
-                                        ItemStack stack2 = inventory.decrStackSize(j, inv.getStackInSlot(i).getMaxStackSize() - inv.getStackInSlot(i).getCount());
-                                        inv.getStackInSlot(i).setCount(inv.getStackInSlot(i).getCount() + stack2.getCount());
-                                    }
-                                    rocketContainsItems = true;
+							for(int i = 0; i < inv.getSizeInventory(); i++) {
+								if(inv.getStackInSlot(i).isEmpty())
+									rocketContainsItems = true;
 
-                                    if (inventory.getStackInSlot(j).isEmpty())
-                                        break out;
+								//Loop though this inventory's slots and find a suitible one
+								for(int j = 0; j < getSizeInventory(); j++) {
+									if((inv.getStackInSlot(i).isEmpty()) && !inventory.getStackInSlot(j).isEmpty()) {
+										if(isAllowedToOperate) {
+											inv.setInventorySlotContents(i, inventory.getStackInSlot(j));
+											inventory.setInventorySlotContents(j,ItemStack.EMPTY);
+										}
+										rocketContainsItems = true;
+										break out;
+									}
+									else if(!getStackInSlot(j).isEmpty() && inv.isItemValidForSlot(i, getStackInSlot(j)) && inv.getStackInSlot(i).getItem() == getStackInSlot(j).getItem() &&
+											ItemStack.areItemStackTagsEqual(inv.getStackInSlot(i), getStackInSlot(j)) && inv.getStackInSlot(i).getMaxStackSize() != inv.getStackInSlot(i).getCount() ) {
+										if(isAllowedToOperate) {
+											ItemStack stack2 = inventory.decrStackSize(j, inv.getStackInSlot(i).getMaxStackSize() - inv.getStackInSlot(i).getCount());
+											inv.getStackInSlot(i).setCount(inv.getStackInSlot(i).getCount() + stack2.getCount());
+										}
+										rocketContainsItems = true;
 
-                                    foundStack = true;
-                                }
-                            }
-                            if (foundStack)
-                                break out;
-                        }
-                    }
-                }
-            }
+										if(inventory.getStackInSlot(j).isEmpty())
+											break out;
 
-            //Update redstone state
-            setRedstoneState(!rocketContainsItems);
+										foundStack = true;
+									}
+								}
+								if(foundStack)
+									break out;
+							}
+						}
+					}
+				}
 
-        }
-    }
+			//Update redstone state
+			setRedstoneState(!rocketContainsItems);
 
-    @Override
-    public SPacketUpdateTileEntity getUpdatePacket() {
-        return new SPacketUpdateTileEntity(pos, getBlockMetadata(), getUpdateTag());
-    }
+		}
+	}
 
-    @Override
-    public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity pkt) {
-        handleUpdateTag(pkt.getNbtCompound());
-    }
+	@Override
+	public SPacketUpdateTileEntity getUpdatePacket() {
+		return new SPacketUpdateTileEntity(pos, getBlockMetadata(), getUpdateTag());
+	}
 
-    @Override
-    public NBTTagCompound getUpdateTag() {
-        return writeToNBT(new NBTTagCompound());
-    }
+	@Override
+	public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity pkt) {
+		handleUpdateTag(pkt.getNbtCompound());
+	}
 
-    protected void setRedstoneState(boolean condition) {
-        condition = isStateActive(state, condition);
-        ((BlockARHatch) AdvancedRocketryBlocks.blockLoader).setRedstoneState(world, world.getBlockState(pos), pos, condition);
-    }
+	@Override
+	public NBTTagCompound getUpdateTag() {
+		return writeToNBT(new NBTTagCompound());
+	}
 
-    protected boolean isStateActive(RedstoneState state, boolean condition) {
-        if (state == RedstoneState.INVERTED)
-            return !condition;
-        else if (state == RedstoneState.OFF)
-            return false;
-        return condition;
-    }
+	protected void setRedstoneState(boolean condition) {
+		condition = isStateActive(state, condition);
+		((BlockARHatch)AdvancedRocketryBlocks.blockLoader).setRedstoneState(world,world.getBlockState(pos), pos, condition);
+	}
 
-    @Override
-    public boolean onLinkStart(@Nonnull ItemStack item, TileEntity entity,
-                               EntityPlayer player, World world) {
+	protected boolean isStateActive(RedstoneState state, boolean condition) {
+		if(state == RedstoneState.INVERTED)
+			return !condition;
+		else if(state == RedstoneState.OFF)
+			return false;
+		return condition;
+	}
 
-        ItemLinker.setMasterCoords(item, this.pos);
+	@Override
+	public boolean onLinkStart(@Nonnull ItemStack item, TileEntity entity,
+							   EntityPlayer player, World world) {
 
-        if (this.rocket != null) {
-            this.rocket.unlinkInfrastructure(this);
-            this.unlinkRocket();
-        }
+		ItemLinker.setMasterCoords(item, this.pos);
 
-        if (player.world.isRemote)
-            Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(new TextComponentTranslation("%s %s", new TextComponentTranslation("msg.rocketLoader.link"), ": " + getPos().getX() + " " + getPos().getY() + " " + getPos().getZ()));
-        return true;
-    }
+		if(this.rocket != null) {
+			this.rocket.unlinkInfrastructure(this);
+			this.unlinkRocket();
+		}
 
-    @Override
-    public boolean onLinkComplete(@Nonnull ItemStack item, TileEntity entity,
-                                  EntityPlayer player, World world) {
-        if (player.world.isRemote)
-            Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(new TextComponentTranslation("msg.linker.error.firstMachine"));
-        return false;
-    }
+		if(player.world.isRemote)
+			Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(new TextComponentTranslation("%s %s",new TextComponentTranslation("msg.rocketLoader.link"), ": " + getPos().getX() + " " + getPos().getY() + " " + getPos().getZ()));
+		return true;
+	}
 
-    @Override
-    public void unlinkRocket() {
-        rocket = null;
-        ((BlockARHatch) AdvancedRocketryBlocks.blockLoader).setRedstoneState(world, world.getBlockState(pos), pos, false);
-        //On unlink prevent the tile from ticking anymore
+	@Override
+	public boolean onLinkComplete(@Nonnull ItemStack item, TileEntity entity,
+			EntityPlayer player, World world) {
+		if(player.world.isRemote)
+			Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(new TextComponentTranslation("msg.linker.error.firstMachine"));
+		return false;
+	}
 
-        //if(!worldObj.isRemote)
-        //worldObj.loadedTileEntityList.remove(this);
-    }
+	@Override
+	public void unlinkRocket() {
+		rocket = null;
+		((BlockARHatch)AdvancedRocketryBlocks.blockLoader).setRedstoneState(world, world.getBlockState(pos), pos, false);
+		//On unlink prevent the tile from ticking anymore
 
-    @Override
-    public boolean disconnectOnLiftOff() {
-        return true;
-    }
+		//if(!worldObj.isRemote)
+		//worldObj.loadedTileEntityList.remove(this);
+	}
 
-    @Override
-    public boolean linkRocket(EntityRocketBase rocket) {
-        //On linked allow the tile to tick
-        //if(!worldObj.isRemote)
-        //worldObj.loadedTileEntityList.add(this);
-        this.rocket = (EntityRocket) rocket;
-        return true;
-    }
+	@Override
+	public boolean disconnectOnLiftOff() {
+		return true;
+	}
 
-    @Override
-    public boolean canUpdate() {
-        return true;
-    }
+	@Override
+	public boolean linkRocket(EntityRocketBase rocket) {
+		//On linked allow the tile to tick
+		//if(!worldObj.isRemote)
+		//worldObj.loadedTileEntityList.add(this);
+		this.rocket = (EntityRocket) rocket;
+		return true;
+	}
 
-    @Override
-    public boolean linkMission(IMission mission) {
-        return false;
-    }
+	@Override
+	public boolean canUpdate() {
+		return true;
+	}
 
-    @Override
-    public void unlinkMission() {
+	@Override
+	public boolean linkMission(IMission mission) {
+		return false;
+	}
 
-    }
+	@Override
+	public void unlinkMission() {
 
-    @Override
-    public int getMaxLinkDistance() {
-        return 32;
-    }
+	}
 
-    public boolean canRenderConnection() {
-        return true;
-    }
+	@Override
+	public int getMaxLinkDistance() {
+		return 32;
+	}
 
-    @Override
-    public void readFromNBT(NBTTagCompound nbt) {
-        super.readFromNBT(nbt);
+	public boolean canRenderConnection() {
+		return true;
+	}
 
-        state = RedstoneState.values()[nbt.getByte("redstoneState")];
-        redstoneControl.setRedstoneState(state);
+	@Override
+	public void readFromNBT(NBTTagCompound nbt) {
+		super.readFromNBT(nbt);
 
-        inputstate = RedstoneState.values()[nbt.getByte("inputRedstoneState")];
-        inputRedstoneControl.setRedstoneState(inputstate);
+		state = RedstoneState.values()[nbt.getByte("redstoneState")];
+		redstoneControl.setRedstoneState(state);
 
-        sideSelectorModule.readFromNBT(nbt);
-    }
+		inputstate = RedstoneState.values()[nbt.getByte("inputRedstoneState")];
+		inputRedstoneControl.setRedstoneState(inputstate);
 
-    @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
-        super.writeToNBT(nbt);
-        nbt.setByte("redstoneState", (byte) state.ordinal());
-        nbt.setByte("inputRedstoneState", (byte) inputstate.ordinal());
-        sideSelectorModule.writeToNBT(nbt);
-        return nbt;
-    }
+		sideSelectorModule.readFromNBT(nbt);
+	}
 
-    @Override
-    public void onInventoryButtonPressed(int buttonId) {
-        if (buttonId == 0)
-            state = redstoneControl.getState();
-        if (buttonId == 1)
-            inputstate = inputRedstoneControl.getState();
-        PacketHandler.sendToServer(new PacketMachine(this, (byte) 0));
-    }
+	@Override
+	public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
+		super.writeToNBT(nbt);
+		nbt.setByte("redstoneState", (byte) state.ordinal());
+		nbt.setByte("inputRedstoneState", (byte) inputstate.ordinal());
+		sideSelectorModule.writeToNBT(nbt);
+		return nbt;
+	}
 
-    @Override
-    public void writeDataToNetwork(ByteBuf out, byte id) {
-        out.writeByte(state.ordinal());
-        out.writeByte(inputstate.ordinal());
-        for (int i = 0; i < 6; i++)
-            out.writeByte(sideSelectorModule.getStateForSide(i));
-    }
+	@Override
+	public void onInventoryButtonPressed(int buttonId) {
+		if(buttonId == 0)
+			state = redstoneControl.getState();
+		if(buttonId == 1)
+			inputstate = inputRedstoneControl.getState();
+		PacketHandler.sendToServer(new PacketMachine(this, (byte)0));
+	}
 
-    @Override
-    public void readDataFromNetwork(ByteBuf in, byte packetId,
-                                    NBTTagCompound nbt) {
-        nbt.setByte("state", in.readByte());
-        nbt.setByte("inputstate", in.readByte());
+	@Override
+	public void writeDataToNetwork(ByteBuf out, byte id) {
+		out.writeByte(state.ordinal());
+		out.writeByte(inputstate.ordinal());
+		for(int i = 0; i < 6; i++)
+			out.writeByte(sideSelectorModule.getStateForSide(i));
+	}
 
-        byte[] bytes = new byte[6];
-        for (int i = 0; i < 6; i++)
-            bytes[i] = in.readByte();
-        nbt.setByteArray("bytes", bytes);
-    }
+	@Override
+	public void readDataFromNetwork(ByteBuf in, byte packetId,
+			NBTTagCompound nbt) {
+		nbt.setByte("state", in.readByte());
+		nbt.setByte("inputstate", in.readByte());
 
-    @Override
-    public void useNetworkData(EntityPlayer player, Side side, byte id,
-                               NBTTagCompound nbt) {
-        state = RedstoneState.values()[nbt.getByte("state")];
-        inputstate = RedstoneState.values()[nbt.getByte("inputstate")];
+		byte[] bytes = new byte[6];
+		for(int i = 0; i < 6; i++)
+			bytes[i] = in.readByte();
+		nbt.setByteArray("bytes", bytes);
+	}
 
-        byte[] bytes = nbt.getByteArray("bytes");
-        for (int i = 0; i < 6; i++)
-            sideSelectorModule.setStateForSide(i, bytes[i]);
+	@Override
+	public void useNetworkData(EntityPlayer player, Side side, byte id,
+			NBTTagCompound nbt) {
+		state = RedstoneState.values()[nbt.getByte("state")];
+		inputstate = RedstoneState.values()[nbt.getByte("inputstate")];
 
-        if (rocket == null)
-            setRedstoneState(state == RedstoneState.INVERTED);
+		byte[] bytes = nbt.getByteArray("bytes");
+		for(int i = 0; i < 6; i++)
+			sideSelectorModule.setStateForSide(i, bytes[i]);
 
-        markDirty();
-        world.markChunkDirty(getPos(), this);
-    }
+		if(rocket == null)
+			setRedstoneState(state == RedstoneState.INVERTED);
+
+		markDirty();
+		world.markChunkDirty(getPos(), this);
+	}
 
 
-    @Override
-    public void onModuleUpdated(ModuleBase module) {
-        PacketHandler.sendToServer(new PacketMachine(this, (byte) 0));
-    }
+	@Override
+	public void onModuleUpdated(ModuleBase module) {
+		PacketHandler.sendToServer(new PacketMachine(this, (byte)0));
+	}
 }

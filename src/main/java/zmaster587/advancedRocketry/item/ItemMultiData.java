@@ -17,109 +17,111 @@ import java.util.List;
 
 public class ItemMultiData extends Item {
 
-    public ItemMultiData() {
-        super();
-    }
+	public ItemMultiData() {
+		super();
+	}
 
-    public void setMaxData(@Nonnull ItemStack stack, int amount) {
-        MultiData data = getDataStorage(stack);
-        data.setMaxData(amount);
+	public void setMaxData(@Nonnull ItemStack stack, int amount) {
+		MultiData data = getDataStorage(stack);
+		data.setMaxData(amount);
 
-        NBTTagCompound nbt;
+		NBTTagCompound nbt;
 
-        if (!stack.hasTagCompound()) {
-            nbt = new NBTTagCompound();
-        } else
-            nbt = stack.getTagCompound();
-        data.writeToNBT(nbt);
-        stack.setTagCompound(nbt);
-    }
+		if(!stack.hasTagCompound()) {
+			nbt= new NBTTagCompound();
+		}
+		else
+			nbt = stack.getTagCompound();
+		data.writeToNBT(nbt);
+		stack.setTagCompound(nbt);
+	}
 
-    public int getData(@Nonnull ItemStack stack, DataStorage.DataType type) {
-        return getDataStorage(stack).getDataAmount(type);
-    }
+	public int getData(@Nonnull ItemStack stack, DataStorage.DataType type) {
+		return getDataStorage(stack).getDataAmount(type);
+	}
+	
+	public int getMaxData(@Nonnull ItemStack stack) {
+		return getDataStorage(stack).getMaxData();
+	}
 
-    public int getMaxData(@Nonnull ItemStack stack) {
-        return getDataStorage(stack).getMaxData();
-    }
+	private MultiData getDataStorage(@Nonnull ItemStack item) {
 
-    private MultiData getDataStorage(@Nonnull ItemStack item) {
+		MultiData data = new MultiData();
 
-        MultiData data = new MultiData();
+		if(!item.hasTagCompound()) {
+			NBTTagCompound nbt = new NBTTagCompound();
+			data.writeToNBT(nbt);
+		}
+		else
+			data.readFromNBT(item.getTagCompound());
 
-        if (!item.hasTagCompound()) {
-            NBTTagCompound nbt = new NBTTagCompound();
-            data.writeToNBT(nbt);
-        } else
-            data.readFromNBT(item.getTagCompound());
+		return data;
+	}
 
-        return data;
-    }
+	public boolean isFull(@Nonnull ItemStack item,  DataStorage.DataType dataType) {
+		return getDataStorage(item).getMaxData() == getData(item, dataType);
+		
+	}
+	
+	public int addData(@Nonnull ItemStack item, int amount, DataStorage.DataType dataType) {
+		MultiData data = getDataStorage(item);
 
-    public boolean isFull(@Nonnull ItemStack item, DataStorage.DataType dataType) {
-        return getDataStorage(item).getMaxData() == getData(item, dataType);
+		int amt = data.addData(amount, dataType, EnumFacing.DOWN,true);
 
-    }
+		NBTTagCompound nbt;
+		if(item.hasTagCompound())
+			nbt = item.getTagCompound();
+		else
+			nbt = new NBTTagCompound();
+		
+		data.writeToNBT(nbt);
+		item.setTagCompound(nbt);
 
-    public int addData(@Nonnull ItemStack item, int amount, DataStorage.DataType dataType) {
-        MultiData data = getDataStorage(item);
+		return amt;
+	}
 
-        int amt = data.addData(amount, dataType, EnumFacing.DOWN, true);
+	public int removeData(@Nonnull ItemStack item, int amount, DataStorage.DataType dataType) {
+		MultiData data = getDataStorage(item);
 
-        NBTTagCompound nbt;
-        if (item.hasTagCompound())
-            nbt = item.getTagCompound();
-        else
-            nbt = new NBTTagCompound();
+		int amt = data.extractData(amount, dataType, EnumFacing.DOWN, true);
+		
+		NBTTagCompound nbt;
+		if(item.hasTagCompound())
+			nbt = item.getTagCompound();
+		else
+			nbt = new NBTTagCompound();
+		
+		data.writeToNBT(nbt);
+		item.setTagCompound(nbt);
 
-        data.writeToNBT(nbt);
-        item.setTagCompound(nbt);
+		return amt;
+	}
 
-        return amt;
-    }
+	public void setData(@Nonnull ItemStack item, int amount, DataStorage.DataType dataType) {
+		MultiData data = getDataStorage(item);
 
-    public int removeData(@Nonnull ItemStack item, int amount, DataStorage.DataType dataType) {
-        MultiData data = getDataStorage(item);
+		data.setDataAmount(amount, dataType);
 
-        int amt = data.extractData(amount, dataType, EnumFacing.DOWN, true);
+		NBTTagCompound nbt;
+		if(item.hasTagCompound())
+			nbt = item.getTagCompound();
+		else
+			nbt = new NBTTagCompound();
+		
+		data.writeToNBT(nbt);
+		item.setTagCompound(nbt);
+	}
 
-        NBTTagCompound nbt;
-        if (item.hasTagCompound())
-            nbt = item.getTagCompound();
-        else
-            nbt = new NBTTagCompound();
+	@Override
+	@SideOnly(Side.CLIENT)
+	public void addInformation(@Nonnull ItemStack stack, World player, List<String> list, ITooltipFlag bool) {
+		super.addInformation(stack, player, list, bool);
 
-        data.writeToNBT(nbt);
-        item.setTagCompound(nbt);
+		MultiData data = getDataStorage(stack);
 
-        return amt;
-    }
-
-    public void setData(@Nonnull ItemStack item, int amount, DataStorage.DataType dataType) {
-        MultiData data = getDataStorage(item);
-
-        data.setDataAmount(amount, dataType);
-
-        NBTTagCompound nbt;
-        if (item.hasTagCompound())
-            nbt = item.getTagCompound();
-        else
-            nbt = new NBTTagCompound();
-
-        data.writeToNBT(nbt);
-        item.setTagCompound(nbt);
-    }
-
-    @Override
-    @SideOnly(Side.CLIENT)
-    public void addInformation(@Nonnull ItemStack stack, World player, List<String> list, ITooltipFlag bool) {
-        super.addInformation(stack, player, list, bool);
-
-        MultiData data = getDataStorage(stack);
-
-        for (DataStorage.DataType type : DataStorage.DataType.values()) {
-            if (type != DataStorage.DataType.UNDEFINED)
-                list.add(data.getDataAmount(type) + " / " + data.getMaxData() + " " + I18n.format(type.toString(), new Object[0]) + " Data");
-        }
-    }
+		for(DataStorage.DataType type : DataStorage.DataType.values()) {
+			if(type != DataStorage.DataType.UNDEFINED)
+				list.add(data.getDataAmount(type) + " / " + data.getMaxData() + " " + I18n.format(type.toString(), new Object[0]) + " Data");
+		}
+	}
 }

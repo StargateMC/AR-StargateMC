@@ -1,18 +1,21 @@
 pluginManagement {
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == "net.minecraftforge.gradle") {
+                useModule("${requested.id}:ForgeGradle:${requested.version}")
+            }
+        }
+    }
+
     repositories {
         gradlePluginPortal()
-        mavenCentral()
         maven {
             name = "MinecraftForge"
             url = uri("https://maven.minecraftforge.net/")
         }
         maven {
             name = "FancyGradle"
-            url = uri("https://maven.gofancy.wtf/releases")
-        }
-        maven { url = uri("https://plugins.gradle.org/m2/") }
-        maven {
-            url = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+            url = uri("https://gitlab.com/api/v4/projects/26758973/packages/maven")
         }
     }
 }

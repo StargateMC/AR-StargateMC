@@ -16,59 +16,62 @@ import java.util.List;
 
 public class ChunkProviderSpace implements IChunkGenerator {
 
-    World worldObj;
+	World worldObj;
+	
+	public ChunkProviderSpace(World p_i2006_1_, long p_i2006_2_)
+	{
+		this.worldObj = p_i2006_1_;
+	}
 
-    public ChunkProviderSpace(World p_i2006_1_, long p_i2006_2_) {
-        this.worldObj = p_i2006_1_;
-    }
+	@Override
+	public Chunk generateChunk(int p_73154_1_, int p_73154_2_) {
+		Block[] ablock = new Block[65536];
+		byte[] abyte = new byte[65536];
+		ChunkPrimer chunkprimer = new ChunkPrimer();
+		
+		//ChunkExtendedBiome
+		Chunk chunk = new Chunk(this.worldObj, chunkprimer, p_73154_1_, p_73154_2_);//new Chunk(this.worldObj, ablock, abyte, p_73154_1_, p_73154_2_);
+		//TODO: convert back to int
+		byte[] abyte1 = chunk.getBiomeArray();
 
-    @Override
-    public Chunk generateChunk(int p_73154_1_, int p_73154_2_) {
-        Block[] ablock = new Block[65536];
-        byte[] abyte = new byte[65536];
-        ChunkPrimer chunkprimer = new ChunkPrimer();
+		Arrays.fill(abyte1, (byte)Biome.getIdForBiome(AdvancedRocketryBiomes.spaceBiome));
 
-        //ChunkExtendedBiome
-        Chunk chunk = new Chunk(this.worldObj, chunkprimer, p_73154_1_, p_73154_2_);//new Chunk(this.worldObj, ablock, abyte, p_73154_1_, p_73154_2_);
-        //TODO: convert back to int
-        byte[] abyte1 = chunk.getBiomeArray();
+		chunk.generateSkylightMap();
+		return chunk;
+	}
 
-        Arrays.fill(abyte1, (byte) Biome.getIdForBiome(AdvancedRocketryBiomes.spaceBiome));
+	@Override
+	public void populate(int x, int z) {
+		
+	}
 
-        chunk.generateSkylightMap();
-        return chunk;
-    }
+	@Override
+	public boolean generateStructures(Chunk chunkIn, int x, int z) {
+		return false;
+	}
 
-    @Override
-    public void populate(int x, int z) {
+	@Override
+	public List<SpawnListEntry> getPossibleCreatures(
+			EnumCreatureType creatureType, BlockPos pos) {
+		return null;
+	}
 
-    }
-
-    @Override
-    public boolean generateStructures(Chunk chunkIn, int x, int z) {
-        return false;
-    }
-
-    @Override
-    public List<SpawnListEntry> getPossibleCreatures(
-            EnumCreatureType creatureType, BlockPos pos) {
-        return null;
-    }
-
-    @Override
-    public void recreateStructures(Chunk chunkIn, int x, int z) {
-
-    }
+	@Override
+	public void recreateStructures(Chunk chunkIn, int x, int z) {
+		
+	}
 
     @Override
     public BlockPos getNearestStructurePos(World worldIn, String structureName, BlockPos position,
-                                           boolean findUnexplored) {
+            boolean findUnexplored)
+    {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public boolean isInsideStructure(World worldIn, String structureName, BlockPos pos) {
+    public boolean isInsideStructure(World worldIn, String structureName, BlockPos pos)
+    {
         // TODO Auto-generated method stub
         return false;
     }

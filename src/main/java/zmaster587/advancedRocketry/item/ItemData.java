@@ -15,88 +15,89 @@ import java.util.List;
 
 public class ItemData extends ItemIngredient {
 
-    int maxData;
+	int maxData;
 
-    public ItemData() {
-        super(1);
-        setMaxStackSize(1);
-    }
+	public ItemData() {
+		super(1);
+		setMaxStackSize(1);
+	}
 
-    public int getMaxData(int damage) {
-        return damage == 0 ? 1000 : 0;
-    }
+	public int getMaxData(int damage) {
+		return damage == 0 ? 1000 : 0;
+	}
 
-    @Override
-    public int getItemStackLimit(@Nonnull ItemStack stack) {
-        return getData(stack) == 0 ? super.getItemStackLimit(stack) : 1;
-    }
+	@Override
+	public int getItemStackLimit(@Nonnull ItemStack stack) {
+		return getData(stack) == 0 ? super.getItemStackLimit(stack) : 1;
+	}
+	
+	public int getData(@Nonnull ItemStack stack) {
+		return getDataStorage(stack).getData();
+	}
+	
+	public DataStorage.DataType getDataType(@Nonnull ItemStack stack) {
+		return getDataStorage(stack).getDataType();
+	}
+	
+	public DataStorage getDataStorage(@Nonnull ItemStack item) {
 
-    public int getData(@Nonnull ItemStack stack) {
-        return getDataStorage(stack).getData();
-    }
+		DataStorage data = new DataStorage();
 
-    public DataStorage.DataType getDataType(@Nonnull ItemStack stack) {
-        return getDataStorage(stack).getDataType();
-    }
+		if(!item.hasTagCompound()) {
+			data.setMaxData(getMaxData(item.getItemDamage()));
+			NBTTagCompound nbt = new NBTTagCompound();
+			data.writeToNBT(nbt);
+		}
+		else
+			data.readFromNBT(item.getTagCompound());
 
-    public DataStorage getDataStorage(@Nonnull ItemStack item) {
+		return data;
+	}
 
-        DataStorage data = new DataStorage();
+	public int addData(@Nonnull ItemStack item, int amount, DataStorage.DataType dataType) {
+		DataStorage data = getDataStorage(item);
 
-        if (!item.hasTagCompound()) {
-            data.setMaxData(getMaxData(item.getItemDamage()));
-            NBTTagCompound nbt = new NBTTagCompound();
-            data.writeToNBT(nbt);
-        } else
-            data.readFromNBT(item.getTagCompound());
+		int amt = data.addData(amount, dataType, true);
 
-        return data;
-    }
+		NBTTagCompound nbt = new NBTTagCompound();
+		data.writeToNBT(nbt);
+		item.setTagCompound(nbt);
 
-    public int addData(@Nonnull ItemStack item, int amount, DataStorage.DataType dataType) {
-        DataStorage data = getDataStorage(item);
+		return amt;
+	}
 
-        int amt = data.addData(amount, dataType, true);
+	public int removeData(@Nonnull ItemStack item, int amount, DataStorage.DataType dataType) {
+		DataStorage data = getDataStorage(item);
 
-        NBTTagCompound nbt = new NBTTagCompound();
-        data.writeToNBT(nbt);
-        item.setTagCompound(nbt);
+		int amt = data.removeData(amount, true);
 
-        return amt;
-    }
+		NBTTagCompound nbt = new NBTTagCompound();
+		data.writeToNBT(nbt);
+		item.setTagCompound(nbt);
 
-    public int removeData(@Nonnull ItemStack item, int amount, DataStorage.DataType dataType) {
-        DataStorage data = getDataStorage(item);
+		return amt;
+	}
 
-        int amt = data.removeData(amount, true);
+	public void setData(@Nonnull ItemStack item, int amount, DataStorage.DataType dataType) {
+		DataStorage data = getDataStorage(item);
 
-        NBTTagCompound nbt = new NBTTagCompound();
-        data.writeToNBT(nbt);
-        item.setTagCompound(nbt);
+		data.setData(amount, dataType);
 
-        return amt;
-    }
+		NBTTagCompound nbt = new NBTTagCompound();
+		data.writeToNBT(nbt);
+		item.setTagCompound(nbt);
+	}
 
-    public void setData(@Nonnull ItemStack item, int amount, DataStorage.DataType dataType) {
-        DataStorage data = getDataStorage(item);
+	@Override
+	@SideOnly(Side.CLIENT)
+	public void addInformation(@Nonnull ItemStack stack, World player, List<String> list, ITooltipFlag bool) {
+		super.addInformation(stack, player, list, bool);
 
-        data.setData(amount, dataType);
+		DataStorage data = getDataStorage(stack);
 
-        NBTTagCompound nbt = new NBTTagCompound();
-        data.writeToNBT(nbt);
-        item.setTagCompound(nbt);
-    }
+		list.add(data.getData() + " / " + data.getMaxData() + " Data");
+		list.add(I18n.format(data.getDataType().toString()));
 
-    @Override
-    @SideOnly(Side.CLIENT)
-    public void addInformation(@Nonnull ItemStack stack, World player, List<String> list, ITooltipFlag bool) {
-        super.addInformation(stack, player, list, bool);
-
-        DataStorage data = getDataStorage(stack);
-
-        list.add(data.getData() + " / " + data.getMaxData() + " Data");
-        list.add(I18n.format(data.getDataType().toString()));
-
-    }
+	}
 
 }

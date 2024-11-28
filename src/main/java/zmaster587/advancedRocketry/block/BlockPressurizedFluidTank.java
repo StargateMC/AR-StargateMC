@@ -35,125 +35,126 @@ import java.util.List;
 
 public class BlockPressurizedFluidTank extends Block {
 
-    private static final AxisAlignedBB bb = new AxisAlignedBB(.0625, 0, 0.0625, 0.9375, 1, 0.9375);
+	private static final AxisAlignedBB bb = new AxisAlignedBB(.0625, 0, 0.0625, 0.9375, 1, 0.9375);
+	
+	public BlockPressurizedFluidTank(Material material) {
+		super(material);
+		isBlockContainer = true;
+	}
 
-    public BlockPressurizedFluidTank(Material material) {
-        super(material);
-        hasTileEntity = true;
-    }
+	@Override
+	public boolean hasTileEntity(IBlockState state) {
+		return true;
+	}
+	
+	@Override
+	public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing side, float hitX, float hitY, float hitZ) {
+		TileEntity tile = world.getTileEntity(pos);
 
-    @Override
-    public boolean hasTileEntity(IBlockState state) {
-        return true;
-    }
+		//Do some fancy fluid stuff
+		if (FluidUtils.containsFluid(player.getHeldItem(hand))) {
+			FluidUtil.interactWithFluidHandler(player, hand, ((TileFluidHatch) tile).getFluidTank());
+		} else if(!world.isRemote)
+			player.openGui(LibVulpes.instance, guiId.MODULAR.ordinal(), world, pos.getX(), pos.getY(), pos.getZ());
+		return true;
+	}
 
-    @Override
-    public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing side, float hitX, float hitY, float hitZ) {
-        TileEntity tile = world.getTileEntity(pos);
+	@Override
+	@ParametersAreNullableByDefault
+	public TileEntity createTileEntity(World world, IBlockState state) {
+		return new TileFluidTank((int) (64000 * ARConfiguration.getCurrentConfig().blockTankCapacity));
+	}
+	
+	@Override
+	@Nonnull
+	@ParametersAreNullableByDefault
+	public List<ItemStack> getDrops(IBlockAccess world, BlockPos pos,
+			IBlockState state, int fortune) {
+		return new LinkedList<>();
+	}
+	
+	@Override
+	@ParametersAreNonnullByDefault
+	public void harvestBlock(World world, EntityPlayer player, BlockPos pos, IBlockState state, @Nullable TileEntity te, @Nonnull ItemStack stack) {
 
-        //Do some fancy fluid stuff
-        if (FluidUtils.containsFluid(player.getHeldItem(hand))) {
-            FluidUtil.interactWithFluidHandler(player, hand, ((TileFluidHatch) tile).getFluidTank());
-        } else if (!world.isRemote)
-            player.openGui(LibVulpes.instance, guiId.MODULAR.ordinal(), world, pos.getX(), pos.getY(), pos.getZ());
-        return true;
-    }
-
-    @Override
-    @ParametersAreNullableByDefault
-    public TileEntity createTileEntity(World world, IBlockState state) {
-        return new TileFluidTank((int) (64000 * ARConfiguration.getCurrentConfig().blockTankCapacity));
-    }
-
-    @Override
-    @Nonnull
-    @ParametersAreNullableByDefault
-    public List<ItemStack> getDrops(IBlockAccess world, BlockPos pos,
-                                    IBlockState state, int fortune) {
-        return new LinkedList<>();
-    }
-
-    @Override
-    @ParametersAreNonnullByDefault
-    public void harvestBlock(World world, EntityPlayer player, BlockPos pos, IBlockState state, @Nullable TileEntity te, @Nonnull ItemStack stack) {
-
-        if (te instanceof TileFluidTank) {
-            IFluidHandler fluid = te.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, EnumFacing.DOWN);
+		if(te instanceof TileFluidTank) {
+			IFluidHandler fluid = te.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, EnumFacing.DOWN);
 
 
-            ItemStack itemstack = new ItemStack(AdvancedRocketryBlocks.blockPressureTank);
+			ItemStack itemstack = new ItemStack(AdvancedRocketryBlocks.blockPressureTank);
+			
+			((ItemBlockFluidTank)itemstack.getItem()).fill(itemstack, fluid.drain(Integer.MAX_VALUE, false));
+			
+			EntityItem entityitem;
 
-            ((ItemBlockFluidTank) itemstack.getItem()).fill(itemstack, fluid.drain(Integer.MAX_VALUE, false));
+			int j1 = world.rand.nextInt(21) + 10;
+			float f = world.rand.nextFloat() * 0.8F + 0.1F;
+			float f1 = world.rand.nextFloat() * 0.8F + 0.1F;
+			float f2 = world.rand.nextFloat() * 0.8F + 0.1F;
 
-            EntityItem entityitem;
+			itemstack.setCount(1);
+			entityitem = new EntityItem(world, (float)pos.getX() + f, (float)pos.getY() + f1, (float)pos.getZ() + f2, new ItemStack(itemstack.getItem(), 1, 0));
+			float f3 = 0.05F;
+			entityitem.motionX = (float)world.rand.nextGaussian() * f3;
+			entityitem.motionY = (float)world.rand.nextGaussian() * f3 + 0.2F;
+			entityitem.motionZ = (float)world.rand.nextGaussian() * f3;
 
-            int j1 = world.rand.nextInt(21) + 10;
-            float f = world.rand.nextFloat() * 0.8F + 0.1F;
-            float f1 = world.rand.nextFloat() * 0.8F + 0.1F;
-            float f2 = world.rand.nextFloat() * 0.8F + 0.1F;
+			if (itemstack.hasTagCompound())
+			{
+				entityitem.getItem().setTagCompound(itemstack.getTagCompound().copy());
+			}
+			world.spawnEntity(entityitem);
+		}
+		
+		super.harvestBlock(world, player, pos, state, te, stack);
+	}
+	
+	@Override
+	@ParametersAreNonnullByDefault
+	public boolean shouldSideBeRendered(IBlockState blockState,
+			IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
+		
+		if(side.getFrontOffsetY() != 0) {
+			if(blockAccess.getBlockState(pos).getBlock() == this)
+			return true;
+		}
+		
+		return super.shouldSideBeRendered(blockState, blockAccess, pos, side);
+	}
+	
+	@Override
+	@Nonnull
+	public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess source,
+			BlockPos pos) {
+		return bb;
+	}
 
-            itemstack.setCount(1);
-            entityitem = new EntityItem(world, (float) pos.getX() + f, (float) pos.getY() + f1, (float) pos.getZ() + f2, new ItemStack(itemstack.getItem(), 1, 0));
-            float f3 = 0.05F;
-            entityitem.motionX = (float) world.rand.nextGaussian() * f3;
-            entityitem.motionY = (float) world.rand.nextGaussian() * f3 + 0.2F;
-            entityitem.motionZ = (float) world.rand.nextGaussian() * f3;
+	@Override
+	public boolean isFullCube(IBlockState state) {
+		return false;
+	}
 
-            if (itemstack.hasTagCompound()) {
-                entityitem.getItem().setTagCompound(itemstack.getTagCompound().copy());
-            }
-            world.spawnEntity(entityitem);
-        }
-
-        super.harvestBlock(world, player, pos, state, te, stack);
-    }
-
-    @Override
-    @ParametersAreNonnullByDefault
-    public boolean shouldSideBeRendered(IBlockState blockState,
-                                        IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
-
-        if (side.getFrontOffsetY() != 0) {
-            if (blockAccess.getBlockState(pos).getBlock() == this)
-                return true;
-        }
-
-        return super.shouldSideBeRendered(blockState, blockAccess, pos, side);
-    }
-
-    @Override
-    @Nonnull
-    public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess source,
-                                        BlockPos pos) {
-        return bb;
-    }
-
-    @Override
-    public boolean isFullCube(IBlockState state) {
-        return false;
-    }
-
-    @Override
-    public void onNeighborChange(IBlockAccess world, BlockPos pos,
-                                 BlockPos neighbor) {
-        TileEntity tile = world.getTileEntity(pos);
-        if (tile instanceof TileFluidTank)
-            ((TileFluidTank) tile).onAdjacentBlockUpdated(EnumFacing.getFacingFromVector(neighbor.getX() - pos.getX(), neighbor.getY() - pos.getY(), neighbor.getZ() - pos.getZ()));
-    }
-
-    @Override
-    @Nonnull
-    public BlockRenderLayer getBlockLayer() {
-        return BlockRenderLayer.CUTOUT;
-    }
-
-    @Override
-    public boolean isOpaqueCube(IBlockState state) {
-        return false;
-    }
-
-    @Override
-    public boolean isBlockNormalCube(IBlockState state) {
-        return false;
-    }
+	@Override
+	public void onNeighborChange(IBlockAccess world, BlockPos pos,
+			BlockPos neighbor) {
+		TileEntity tile = world.getTileEntity(pos);
+		if(tile instanceof TileFluidTank)
+			((TileFluidTank)tile).onAdjacentBlockUpdated(EnumFacing.getFacingFromVector(neighbor.getX() - pos.getX(), neighbor.getY() - pos.getY(), neighbor.getZ() - pos.getZ()));
+	}
+	
+	@Override
+	@Nonnull
+	public BlockRenderLayer getBlockLayer() {
+		return BlockRenderLayer.CUTOUT;
+	}
+	
+	@Override
+	public boolean isOpaqueCube(IBlockState state) {
+		return false;
+	}
+	
+	@Override
+	public boolean isBlockNormalCube(IBlockState state) {
+		return false;
+	}
 }

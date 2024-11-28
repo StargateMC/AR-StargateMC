@@ -12,62 +12,62 @@ import zmaster587.libVulpes.inventory.modules.IModularInventory;
 
 public class GuiHandler implements IGuiHandler {
 
-    //X coord is entity ID num if entity
-    @Override
-    public Object getServerGuiElement(int ID, EntityPlayer player, World world,
-                                      int x, int y, int z) {
+	public enum guiId {
+		RocketBuilder,
+		BlastFurnace,
+		OreMappingSatellite,
+		StationChip
+	}
 
-        Object tile;
+	//X coord is entity ID num if entity
+	@Override
+	public Object getServerGuiElement(int ID, EntityPlayer player, World world,
+			int x, int y, int z) {
 
-        if (x == -1 && y < -1) {
-            ItemStack stack = player.getHeldItem(EnumHand.MAIN_HAND);
+		Object tile;
 
-            //If there is latency or some desync odd things can happen so check for that
-            if (stack.isEmpty() || !(stack.getItem() instanceof IModularInventory)) {
-                return null;
-            }
-        }
+		if(x == -1 && y < -1) {
+			ItemStack stack = player.getHeldItem(EnumHand.MAIN_HAND);
+			
+			//If there is latency or some desync odd things can happen so check for that
+			if(stack.isEmpty() || !(stack.getItem() instanceof IModularInventory)) {
+				return null;
+			}
+		}
 
-        if (ID == guiId.OreMappingSatellite.ordinal()) {
-            SatelliteBase satellite = DimensionManager.getInstance().getSatellite(y);
+		if(ID == guiId.OreMappingSatellite.ordinal()) {
+			SatelliteBase satellite = DimensionManager.getInstance().getSatellite(y);
+			
+			if(!(satellite instanceof SatelliteOreMapping) || satellite.getDimensionId() != world.provider.getDimension())
+				satellite = null;
+			
+			return new ContainerOreMappingSatellite((SatelliteOreMapping) satellite, player.inventory);
+		}
+		return null;
+	}
 
-            if (!(satellite instanceof SatelliteOreMapping) || satellite.getDimensionId() != world.provider.getDimension())
-                satellite = null;
+	@Override
+	public Object getClientGuiElement(int ID, EntityPlayer player, World world,
+			int x, int y, int z) {
 
-            return new ContainerOreMappingSatellite((SatelliteOreMapping) satellite, player.inventory);
-        }
-        return null;
-    }
+		if(x == -1 && y < -1) {
+			ItemStack stack = player.getHeldItem(EnumHand.MAIN_HAND);
+			
+			//If there is latency or some desync odd things can happen so check for that
+			if(stack.isEmpty() || !(stack.getItem() instanceof IModularInventory)) {
+				return null;
+			}
+		}
 
-    @Override
-    public Object getClientGuiElement(int ID, EntityPlayer player, World world,
-                                      int x, int y, int z) {
-
-        if (x == -1 && y < -1) {
-            ItemStack stack = player.getHeldItem(EnumHand.MAIN_HAND);
-
-            //If there is latency or some desync odd things can happen so check for that
-            if (stack.isEmpty() || !(stack.getItem() instanceof IModularInventory)) {
-                return null;
-            }
-        }
-
-        if (ID == guiId.OreMappingSatellite.ordinal()) {
-
-            SatelliteBase satellite = DimensionManager.getInstance().getSatellite(y);
-
-            if (!(satellite instanceof SatelliteOreMapping) || satellite.getDimensionId() != world.provider.getDimension())
-                satellite = null;
-
-            return new GuiOreMappingSatellite((SatelliteOreMapping) satellite, player);
-        }
-        return null;
-    }
-
-    public enum guiId {
-        RocketBuilder,
-        BlastFurnace,
-        OreMappingSatellite,
-        StationChip
-    }
+		if(ID == guiId.OreMappingSatellite.ordinal()) {
+			
+			SatelliteBase satellite = DimensionManager.getInstance().getSatellite(y);
+			
+			if(!(satellite instanceof SatelliteOreMapping) || satellite.getDimensionId() != world.provider.getDimension())
+				satellite = null;
+			
+			return new GuiOreMappingSatellite((SatelliteOreMapping) satellite, player);
+		}
+		return null;
+	}
 }

@@ -7,17 +7,17 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import zmaster587.libVulpes.block.BlockTile;
 
-public class BlockHalfTile extends BlockTile {
-    private static final AxisAlignedBB bb = new AxisAlignedBB(0, 0, 0, 1, .5f, 1);
+public class BlockHalfTile  extends BlockTile{
+	private static final AxisAlignedBB bb = new AxisAlignedBB(0, 0, 0, 1, .5f, 1);
+	public BlockHalfTile(Class<? extends TileEntity> tileClass, int guiId) {
+		super(tileClass, guiId);
+	}
 
-    public BlockHalfTile(Class<? extends TileEntity> tileClass, int guiId) {
-        super(tileClass, guiId);
-    }
-
-
-    @Override
-    public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess source,
-                                        BlockPos pos) {
-        return bb;
-    }
+	
+	
+	@Override
+	public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess source,
+			BlockPos pos) {
+		return bb;
+	}
 }

@@ -8,22 +8,23 @@ import zmaster587.libVulpes.LibVulpes;
 
 public class CentrifugeCategory extends MachineCategoryTemplate<CentrifugeWrapper> {
 
-    public CentrifugeCategory(IGuiHelper helper) {
-        super(helper, TextureResources.crystallizerProgressBar);
-    }
+	public CentrifugeCategory(IGuiHelper helper) {
+		super(helper, TextureResources.crystallizerProgressBar);
+	}
+	
+	@Override
+	public String getUid() {
+		return ARPlugin.centrifugeUUID;
+	}
+
+	@Override
+	public String getTitle() {
+		return LibVulpes.proxy.getLocalizedString("tile.centrifuge.name");
+	}
 
     @Override
-    public String getUid() {
-        return ARPlugin.centrifugeUUID;
-    }
-
-    @Override
-    public String getTitle() {
-        return LibVulpes.proxy.getLocalizedString("tile.centrifuge.name");
-    }
-
-    @Override
-    public String getModName() {
+    public String getModName()
+    {
         return "Advanced Rocketry";
     }
 

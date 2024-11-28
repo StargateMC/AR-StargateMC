@@ -8,22 +8,23 @@ import zmaster587.libVulpes.LibVulpes;
 
 public class RollingMachineCategory extends MachineCategoryTemplate<RollingMachineWrapper> {
 
-    public RollingMachineCategory(IGuiHelper helper) {
-        super(helper, TextureResources.rollingMachineProgressBar);
-    }
+	public RollingMachineCategory(IGuiHelper helper) {
+		super(helper, TextureResources.rollingMachineProgressBar);
+	}
+	
+	@Override
+	public String getUid() {
+		return ARPlugin.rollingMachineUUID;
+	}
+
+	@Override
+	public String getTitle() {
+		return LibVulpes.proxy.getLocalizedString("tile.rollingMachine.name");
+	}
 
     @Override
-    public String getUid() {
-        return ARPlugin.rollingMachineUUID;
-    }
-
-    @Override
-    public String getTitle() {
-        return LibVulpes.proxy.getLocalizedString("tile.rollingMachine.name");
-    }
-
-    @Override
-    public String getModName() {
+    public String getModName()
+    {
         return "Advanced Rocketry";
     }
 

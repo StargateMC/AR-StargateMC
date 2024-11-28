@@ -19,196 +19,189 @@ import zmaster587.libVulpes.util.HashedBlockPosition;
 import javax.annotation.Nonnull;
 import java.util.*;
 
-public class SatelliteBiomeChanger extends SatelliteBase {
+public class SatelliteBiomeChanger extends SatelliteBase  {
 
-    private static int MAX_SIZE = 1024;
-    private Biome biomeId;
-    private int radius;
-    //Stores blocks to be updated
-    //Note: we really don't care about order, in fact, lack of order is better
-    private List<HashedBlockPosition> toChangeList;
-    private Set<Byte> discoveredBiomes;
-private int noise_val;
-    public SatelliteBiomeChanger() {
-        super();
-        radius = 4;
-        toChangeList = new LinkedList<>();
-        discoveredBiomes = new HashSet<>();
-        biomeId =  Biome.getBiome(0);
-        noise_val = 6;
-    }
+	private Biome biomeId;
+	private int radius;
 
-    public Biome getBiome() {
-        return biomeId;
-    }
+	//Stores blocks to be updated
+	//Note: we really don't care about order, in fact, lack of order is better
+	private List<HashedBlockPosition> toChangeList;
+	private Set<Byte> discoveredBiomes;
+	private static int MAX_SIZE = 1024;
 
-    public void setBiome(Biome biomeId) {
-        this.biomeId = biomeId;
-    }
+	public SatelliteBiomeChanger() {
+		super();
+		radius = 4;
+		toChangeList = new LinkedList<>();
+		discoveredBiomes = new HashSet<>();
+	}
 
-    public Set<Byte> discoveredBiomes() {
-        return discoveredBiomes;
-    }
+	public void setBiome(Biome biomeId) {
+		this.biomeId = biomeId;
+	}
 
-    public void addBiome(Biome biome) {
-        byte byteBiome = (byte) Biome.getIdForBiome(biome);
+	public Biome getBiome() {
+		return biomeId;
+	}
 
-        if (!AdvancedRocketryBiomes.instance.getBlackListedBiomes().contains(byteBiome))
-            discoveredBiomes.add(byteBiome);
-    }
+	public Set<Byte> discoveredBiomes() {
+		return discoveredBiomes;
+	}
 
-    @Override
-    public String getInfo(World world) {
-        return "Ready";
-    }
+	public void addBiome(Biome biome) {
+		byte byteBiome = (byte)Biome.getIdForBiome(biome);
 
-    @Override
-    public String getName() {
-        return "Biome Changer";
-    }
+		if(!AdvancedRocketryBiomes.instance.getBlackListedBiomes().contains(byteBiome))
+			discoveredBiomes.add(byteBiome);
+	}
 
-    @Override
-    @Nonnull
-    public ItemStack getControllerItemStack(@Nonnull ItemStack satIdChip,
-                                            SatelliteProperties properties) {
+	@Override
+	public String getInfo(World world) {
+		return "Ready";
+	}
 
-        ItemBiomeChanger idChipItem = (ItemBiomeChanger) satIdChip.getItem();
-        idChipItem.setSatellite(satIdChip, properties);
-        return satIdChip;
-    }
+	@Override
+	public String getName() {
+		return "Biome Changer";
+	}
 
-    @Override
-    public boolean isAcceptableControllerItemStack(@Nonnull ItemStack stack) {
-        return !stack.isEmpty() && stack.getItem() instanceof ItemBiomeChanger;
-    }
+	@Override
+	@Nonnull
+	public ItemStack getControllerItemStack(@Nonnull ItemStack satIdChip,
+											SatelliteProperties properties) {
+
+		ItemBiomeChanger idChipItem = (ItemBiomeChanger)satIdChip.getItem();
+		idChipItem.setSatellite(satIdChip, properties);
+		return satIdChip;
+	}
+
+	@Override
+	public boolean isAcceptableControllerItemStack(@Nonnull ItemStack stack) {
+		return !stack.isEmpty() && stack.getItem() instanceof ItemBiomeChanger;
+	}
 
 
-    @Override
-    public void tickEntity() {
-        //This is hacky..
-        World world = net.minecraftforge.common.DimensionManager.getWorld(getDimensionId());
-        int powerrequired = 120;
-        if (world != null) {
+	@Override
+	public void tickEntity() {
+		//This is hacky..
+		World world = net.minecraftforge.common.DimensionManager.getWorld(getDimensionId());
 
-            for (int i = 0; i < 10; i++) {
-                //TODO: Better imp
+		if(world != null) {
 
-                if (world.getTotalWorldTime() % 1 == 0 && !toChangeList.isEmpty()) {
-                    if (battery.getUniversalEnergyStored() > powerrequired) {
-                        if (battery.extractEnergy(powerrequired, false) == powerrequired) {
-                            HashedBlockPosition pos = toChangeList.remove(world.rand.nextInt(toChangeList.size()));
-                            //HashedBlockPosition pos = toChangeList.remove(toChangeList.size()-1);
+			for(int i = 0; i < 10; i++) {
+				//TODO: Better imp
+				if(world.getTotalWorldTime() % 1 == 0 && !toChangeList.isEmpty()) {
+					if(battery.extractEnergy(120, false) == 120 ) {
+						HashedBlockPosition pos = toChangeList.remove(world.rand.nextInt(toChangeList.size()));
 
-                            BiomeHandler.terraform(world, biomeId, pos.getBlockPos(), true, world.provider.getDimension());
-                        }
-                    } else
-                        break;
-                } else
-                    break;
-            }
-        }
-        super.tickEntity();
-    }
+						BiomeHandler.changeBiome(world, biomeId, pos.getBlockPos());
 
-    public void addBlockToList(HashedBlockPosition pos) {
-        if (toChangeList.size() < MAX_SIZE)
-            toChangeList.add(pos);
-    }
+					}
+					else
+						break;
+				}
+			}
+		}
+		super.tickEntity();
+	}
 
-    @Override
-    public boolean performAction(EntityPlayer player, World world, BlockPos pos) {
-        if (world.isRemote)
-            return false;
+	public void addBlockToList(HashedBlockPosition pos) {
+		if(toChangeList.size() < MAX_SIZE)
+			toChangeList.add(pos);
+	}
 
-        radius = 12;
-        noise_val = 12;
-        MAX_SIZE = 8000;
+	@Override
+	public boolean performAction(EntityPlayer player, World world, BlockPos pos) {
+		if(world.isRemote)
+			return false;
+		Set<Chunk> set = new HashSet<>();
+		radius = 16;
+		MAX_SIZE = 1024;
+		for(int xx = -radius + pos.getX(); xx < radius + pos.getX(); xx++) {
+			for(int zz = -radius + pos.getZ(); zz < radius + pos.getZ(); zz++) {
 
-        // make it less square by adding noise to the edges
 
-        for (int xx = -radius-noise_val; xx < radius+noise_val; xx++) {
-            for (int zz = -radius-noise_val; zz < radius+noise_val; zz++) {
+				addBlockToList(new HashedBlockPosition(xx, 0, zz));
+				/*BiomeGenBase biome = world.getBiomeGenForCoords(x, z);
+				BiomeGenBase biomeTo = BiomeGenBase.getBiome(biomeId);
+				if(biome.topBlock != biomeTo.topBlock) {
+					int yy = world.getHeightValue(xx, zz);
+					if(world.getBlock(xx, yy - 1, zz) == biome.topBlock)
+						world.setBlock(xx, yy-1, zz, biomeTo.topBlock);
+				}*/
 
-                int nx = xx + pos.getX();
-                int nz = zz + pos.getZ();
+			}
+		}
 
-                if (isAdd(xx, zz)) {
-                    addBlockToList(new HashedBlockPosition(nx, 0, nz));
-                }
-            }
-        }
+		//Some kind of compiler optimization is breaking if we assign block and biome in the same loop
+		//Causing execution order to vary from source
+		/*for(int xx = -radius + x; xx < radius + x; xx++) {
+			for(int zz = -radius + z; zz < radius + z; zz++) {
+				set.add(world.getChunkFromBlockCoords(xx, zz));
+				byte[] biomeArr = world.getChunkFromBlockCoords(xx, zz).getBiomeArray();
+				biomeArr[(xx % 16)+ (zz % 16)*16] = (byte)biomeId;
+			}
+		}*/
 
-        return false;
-    }
+		/*for(Chunk chunk : set) {
+			PacketHandler.sendToNearby(new PacketBiomeIDChange(chunk, world), world.provider.dimensionId, x, y, z, 64);
+		}*/
+		return false;
+	}
 
-    private boolean isAdd(int xx, int zz) {
+	@Override
+	public double failureChance() {
+		return 0;
+	}
 
-        if (xx > radius || xx < -radius || zz > radius || zz < -radius) {
-            Random r = new Random();
-            // less probability if it gets further away from max radius
-            int dx = Math.abs(xx) - radius;
-            int dz = Math.abs(zz) - radius;
-            int d = Math.max(dx, dz);
-            d = Math.max((d + 1)/2, 1);
-            if (r.nextInt(d) == 0)
-                return true;
-            return false;
+	public IUniversalEnergy getBattery() {
+		return battery;
+	}
 
-        } else return true;
-    }
+	@Override
+	public void writeToNBT(NBTTagCompound nbt) {
+		super.writeToNBT(nbt);
+		nbt.setInteger("biomeId", Biome.getIdForBiome(biomeId));
 
-    @Override
-    public double failureChance() {
-        return 0;
-    }
+		int[] array = new int[toChangeList.size()*3];
+		Iterator<HashedBlockPosition> itr = toChangeList.iterator();
+		for(int i = 0; i < toChangeList.size(); i+=3) {
+			HashedBlockPosition pos = itr.next();
+			array[i] = pos.x;
+			array[i+1] = pos.y;
+			array[i+2] = pos.z;
+		}
+		nbt.setTag("posList", new NBTTagIntArray(array));
 
-    public IUniversalEnergy getBattery() {
-        return battery;
-    }
+		array = new int[discoveredBiomes.size()];
 
-    @Override
-    public void writeToNBT(NBTTagCompound nbt) {
-        super.writeToNBT(nbt);
-        nbt.setInteger("biomeId", Biome.getIdForBiome(biomeId));
+		int i = 0;
+		for(byte biome : discoveredBiomes) {
+			array[i] = biome;
+			i++;
+		}
 
-        int[] array = new int[toChangeList.size() * 3];
-        Iterator<HashedBlockPosition> itr = toChangeList.iterator();
-        for (int i = 0; i < toChangeList.size()*3; i += 3) {
-            HashedBlockPosition pos = itr.next();
-            array[i] = pos.x;
-            array[i + 1] = pos.y;
-            array[i + 2] = pos.z;
-        }
-        nbt.setTag("posList", new NBTTagIntArray(array));
+		nbt.setTag("biomeList", new NBTTagIntArray(array));
+	}
 
-        array = new int[discoveredBiomes.size()];
+	@Override
+	public void readFromNBT(NBTTagCompound nbt) {
+		super.readFromNBT(nbt);
+		biomeId = Biome.getBiome(nbt.getInteger("biomeId"));
 
-        int i = 0;
-        for (byte biome : discoveredBiomes) {
-            array[i] = biome;
-            i++;
-        }
+		int[] array = nbt.getIntArray("posList");
 
-        nbt.setTag("biomeList", new NBTTagIntArray(array));
-    }
+		toChangeList.clear();
+		for(int i = 0; i < array.length; i +=3) {
+			toChangeList.add(new HashedBlockPosition(array[i], array[i+1], array[i+2]));
+		}
 
-    @Override
-    public void readFromNBT(NBTTagCompound nbt) {
-        super.readFromNBT(nbt);
-        biomeId = Biome.getBiome(nbt.getInteger("biomeId"));
-
-        int[] array = nbt.getIntArray("posList");
-
-        toChangeList.clear();
-        for (int i = 0; i < array.length; i += 3) {
-            toChangeList.add(new HashedBlockPosition(array[i], array[i + 1], array[i + 2]));
-        }
-
-        array = nbt.getIntArray("biomeList");
-        discoveredBiomes.clear();
-        for (int value : array) {
-            discoveredBiomes.add((byte) value);
-        }
-    }
+		array = nbt.getIntArray("biomeList");
+		discoveredBiomes.clear();
+		for (int value : array) {
+			discoveredBiomes.add((byte) value);
+		}
+	}
 }
 
