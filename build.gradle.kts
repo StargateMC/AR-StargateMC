@@ -90,19 +90,13 @@ repositories {
         name = "mezz.jei"
         url = uri("https://dvs1.progwml6.com/files/maven/")
     }
-    ivy {
-        name = "industrialcraft-2"
-        artifactPattern("http://jenkins.ic2.player.to/job/IC2_111/39/artifact/build/libs/[module]-[revision].[ext]")
-    }
+
     maven {
         // location of a maven mirror for JEI files, as a fallback
         name = "ModMaven"
         url = uri("https://modmaven.k-4u.nl")
     }
-    maven {
-        name = "Galacticraft"
-        url = uri("https://maven.galacticraft.net/repository/legacy/")
-    }
+
     maven {
         name = "LibVulpes"
         url = uri("http://maven.dmodoomsirius.me/")
@@ -116,7 +110,7 @@ repositories {
 dependencies {
     minecraft(group = "net.minecraftforge", name = "forge", version = "$mcVersion-$forgeVersion")
     implementation("com.fasterxml.jackson.core:jackson-core:2.12.5")
-    compileOnly("net.industrial-craft:industrialcraft-2:$icVersion:dev")
+    //compileOnly("net.industrial-craft:industrialcraft-2:$icVersion:dev")
     //implementation("zmaster587.libVulpes:LibVulpes:$mcVersion-$libVulpesVersion-$libVulpesBuildNum-deobf")
 
     //compileOnly("micdoodle8.mods:galacticraft-api:$gcVersion")
@@ -126,7 +120,7 @@ dependencies {
 
     compileOnly(fg.deobf("mezz.jei:jei_${mcVersion}:${jeiVersion}:api"))
     runtimeOnly(fg.deobf("mezz.jei:jei_${mcVersion}:${jeiVersion}"))
-    implementation ("zmaster587.libVulpes:libVulpes:1.12.2-0.4.2+:deobf")
+    implementation ("zmaster587.libVulpes:libVulpes:1.12.2-0.4.2.75:deobf")
 }
 
 tasks.processResources {

@@ -28,6 +28,8 @@ import zmaster587.advancedRocketry.inventory.TextureResources;
 import zmaster587.libVulpes.inventory.GuiModular;
 import zmaster587.libVulpes.inventory.modules.*;
 import zmaster587.libVulpes.render.RenderHelper;
+import zmaster587.advancedRocketry.AdvancedRocketry;
+
 
 import java.util.*;
 
@@ -507,7 +509,7 @@ public class ModulePlanetSelector extends ModuleContainerPan implements IButtonI
 						currentSystem = properties.getStar().getId() + Constants.STAR_ID_OFFSET;
 					} catch (Exception e) {
 						currentSystem = DimensionManager.getInstance().getDimensionProperties(-102).getStar().getId();
-						Logger.warn("Setting star to : " + currentSystem + " due to losing track of the previous star ID!");
+						AdvancedRocketry.logger.warn("Setting star to : " + currentSystem + " due to losing track of the previous star ID!");
 					}
 				}
 
