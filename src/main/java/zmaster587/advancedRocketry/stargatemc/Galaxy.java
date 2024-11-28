@@ -68,15 +68,13 @@ public enum Galaxy {
 		int x = r.nextInt(getRadius());
 		int z = r.nextInt(getRadius());
 		if (r.nextBoolean()) {
-			x -= getCenterX();
-		} else {
-			x += getCenterX();
+			x *= -1;
 		}
 		if (r.nextBoolean()) {
-			z -= getCenterZ();
-		} else {
-			z += getCenterZ();
+			z *= -1;
 		}
+		x = getCenterX() + x;
+		z = getCenterZ() + z;
 		ArrayList<Integer> coords = new ArrayList<>();
 		coords.add(x);
 		coords.add(z);
