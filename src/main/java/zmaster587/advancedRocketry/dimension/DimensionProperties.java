@@ -441,6 +441,10 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 	 * @param star the star to set as the host for this planet
 	 */
 	public void setStar(StellarBody star) {
+		if (star == null) {
+			AdvancedRocketry.logger.info("Attempting to set a star directly for " + properties.getId() + " failed. Skipping action!");
+			return;
+		}
 		this.starId = star.getId();
 		this.star = star;
 		this.starName = star.getName();
@@ -452,6 +456,9 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 		this.starName = name;
 		if(DimensionManager.getInstance().getStar(starName) != null) {			
 			setStar(DimensionManager.getInstance().getStar(starName));
+		} else {
+			AdvancedRocketry.logger.info("Attempting to set a star directly for " + properties.getId() + " to star by name: " + starName + " failed. Skipping action!");
+			return;
 		}
 	}
 	public void setStar(int id) {
@@ -461,9 +468,15 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 				starId = star.getId();
 				id = star.getId();
 				this.starName = star.getName();
+			} else {
+				AdvancedRocketry.logger.info("Attempting to set a star directly for " + properties.getId() + " to star by ID: " + starId + " failed. Skipping action!");
+				return;
 			}
 		if(DimensionManager.getInstance().getStar(id) != null) {			
 			setStar(DimensionManager.getInstance().getStar(id));
+		} else {			
+				AdvancedRocketry.logger.info("Attempting to set a star directly for " + properties.getId() + " to star by ID: " + starId + " failed. Skipping action!");
+				return;
 		}
 	}
 
@@ -1579,7 +1592,7 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 
 		//Note: parent planet must be set before setting the star otherwise it would cause duplicate planets in the StellarBody's array
 		parentPlanet = nbt.getInteger("parentPlanet");
-		this.setStar(DimensionManager.getInstance().getStar(nbt.getString("starName")));
+		this.setStar(nbt.getString("starName"));
 
 		if(isGasGiant) {
 			NBTTagList fluidList = nbt.getTagList("fluids", NBT.TAG_STRING);
