@@ -442,7 +442,7 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 	 */
 	public void setStar(StellarBody star) {
 		if (star == null) {
-			AdvancedRocketry.logger.info("Attempting to set a star directly for " + properties.getId() + " failed. Skipping action!");
+			AdvancedRocketry.logger.info("Attempting to set a star directly for " + this.getId() + " failed. Skipping action!");
 			return;
 		}
 		this.starId = star.getId();
@@ -457,7 +457,7 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 		if(DimensionManager.getInstance().getStar(starName) != null) {			
 			setStar(DimensionManager.getInstance().getStar(starName));
 		} else {
-			AdvancedRocketry.logger.info("Attempting to set a star directly for " + properties.getId() + " to star by name: " + starName + " failed. Skipping action!");
+			AdvancedRocketry.logger.info("Attempting to set a star directly for " + this.getId() + " to star by name: " + starName + " failed. Skipping action!");
 			return;
 		}
 	}
@@ -469,13 +469,13 @@ public class DimensionProperties implements Cloneable, IDimensionProperties {
 				id = star.getId();
 				this.starName = star.getName();
 			} else {
-				AdvancedRocketry.logger.info("Attempting to set a star directly for " + properties.getId() + " to star by ID: " + starId + " failed. Skipping action!");
+				AdvancedRocketry.logger.info("Attempting to set a star directly for " + this.getId() + " to star by ID: " + starId + " failed. Skipping action!");
 				return;
 			}
 		if(DimensionManager.getInstance().getStar(id) != null) {			
 			setStar(DimensionManager.getInstance().getStar(id));
 		} else {			
-				AdvancedRocketry.logger.info("Attempting to set a star directly for " + properties.getId() + " to star by ID: " + starId + " failed. Skipping action!");
+				AdvancedRocketry.logger.info("Attempting to set a star directly for " + this.getId() + " to star by ID: " + starId + " failed. Skipping action!");
 				return;
 		}
 	}
