@@ -85,7 +85,7 @@ public class TileHolographicPlanetSelector extends TileEntity implements ITickab
 		starEntities = new LinkedList<>();
 		targetGrav = new ModuleText(6, 45, LibVulpes.proxy.getLocalizedString("msg.planetholo.size"), 0x202020);
 		selectedPlanet = null;
-		stellarMode = false;
+		stellarMode = true;
 		selectedId = Constants.INVALID_PLANET;
 		onTime = 1f;
 		size = 0.02f;
@@ -182,40 +182,37 @@ public class TileHolographicPlanetSelector extends TileEntity implements ITickab
 						double centerZ = centerStarEntity != null ? centerStarEntity.posZ : (this.pos.getZ() + 0.5);
 
 						Random r = new Random();
-						double gapFactor = 2.5; // 10% larger spacing
+						float scale = (float) getInterpHologramSize();
+						double displayRadius = 8.0;
+						double sourceRadius = 500.0;
+						double scaleFactor = displayRadius / sourceRadius;
 
-						for(EntityUIStar entity : starEntities) {
-							// Skip stars outside 500 unit radius
+						for (EntityUIStar entity : starEntities) {
 							double dx = entity.getStarProperties().getPosX() - centerStarBody.getPosX();
 							double dz = entity.getStarProperties().getPosZ() - centerStarBody.getPosZ();
-							double distance = Math.sqrt(dx*dx + dz*dz);
-							if(distance > 500) continue;
+							double distance = Math.sqrt(dx * dx + dz * dz);
+							if (distance > sourceRadius) continue;
 
-							double equivX = entity.getStarProperties().getPosX();
-							double equivZ = entity.getStarProperties().getPosZ();
+							double deltaX = dx;
+							double deltaZ = dz;
 
-							double deltaX = equivX - centerStarBody.getPosX();
-							double deltaZ = equivZ - centerStarBody.getPosZ();
+							// Efficient wrapping into [-500, 500)
+							deltaX = ((deltaX + 500) % 1000 + 1000) % 1000 - 500;
+							deltaZ = ((deltaZ + 500) % 1000 + 1000) % 1000 - 500;
 
-							while (deltaX > 500) deltaX -= 1000;
-							while (deltaZ > 500) deltaZ -= 1000;
-							while (deltaX < -500) deltaX += 1000;
-							while (deltaZ < -500) deltaZ += 1000;
-
-							if(entity == centerStarEntity) {
-								// Center star fixed position — no vertical offset or randomness
+							if (entity == centerStarEntity) {
 								entity.setPosition(centerX, centerY, centerZ);
 							} else {
-								// Apply gap factor to spread stars apart a bit
-								entity.setPosition(
-									centerX + getInterpHologramSize() * deltaX / 100f * gapFactor,
-									centerY,
-									centerZ + getInterpHologramSize() * deltaZ / 100f * gapFactor
-								);
+								double posX = centerX + deltaX * scaleFactor;
+								double posZ = centerZ + deltaZ * scaleFactor;
+								entity.setPosition(posX, centerY, posZ);
 							}
 
-							entity.setScale(getInterpHologramSize());
+							entity.setScale(scale);
 						}
+
+
+
 					}
 					else {
 						if(!starEntities.isEmpty()) {
