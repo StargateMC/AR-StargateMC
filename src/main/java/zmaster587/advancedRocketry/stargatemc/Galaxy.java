@@ -16,7 +16,7 @@ import java.util.List;
 
 public enum Galaxy {
 
-	MilkyWay("PL", 0,0,15000),
+	MilkyWay("PL", 0,0,1000),
 	Pegasus("ML", 50000,32000,6000),
 	Ida("IL", 75000,-16000,5200),
 	Othala("OL", 65000,-42000,5500),
