@@ -182,16 +182,17 @@ public class TileHolographicPlanetSelector extends TileEntity implements ITickab
 						double centerZ = centerStarEntity != null ? centerStarEntity.posZ : (this.pos.getZ() + 0.5);
 
 						Random r = new Random();
+						double gapFactor = 2.5; // 10% larger spacing
+
 						for(EntityUIStar entity : starEntities) {
-							// Distance check filter - skip stars beyond 500 units
+							// Skip stars outside 500 unit radius
 							double dx = entity.getStarProperties().getPosX() - centerStarBody.getPosX();
 							double dz = entity.getStarProperties().getPosZ() - centerStarBody.getPosZ();
 							double distance = Math.sqrt(dx*dx + dz*dz);
-							if(distance > 500) continue; // Skip stars outside 500 unit radius
+							if(distance > 500) continue;
 
 							double equivX = entity.getStarProperties().getPosX();
 							double equivZ = entity.getStarProperties().getPosZ();
-							double equivY = 1;
 
 							double deltaX = equivX - centerStarBody.getPosX();
 							double deltaZ = equivZ - centerStarBody.getPosZ();
@@ -201,16 +202,18 @@ public class TileHolographicPlanetSelector extends TileEntity implements ITickab
 							while (deltaX < -500) deltaX += 1000;
 							while (deltaZ < -500) deltaZ += 1000;
 
-							if (entity.getStarProperties().getName().endsWith("ML")) equivY = 3;
-							if (entity.getStarProperties().getName().endsWith("OL")) equivY = 5;
-							if (entity.getStarProperties().getName().endsWith("IL")) equivY = 7;
-							if (entity.getStarProperties().getName().endsWith("HO")) equivY = 9;
-							if (entity.getStarProperties().getName().endsWith("1D")) equivY = 11;
-							float randomY = r.nextFloat();
-							if (r.nextBoolean()) randomY *= -1;
-							equivY += randomY;
+							if(entity == centerStarEntity) {
+								// Center star fixed position — no vertical offset or randomness
+								entity.setPosition(centerX, centerY, centerZ);
+							} else {
+								// Apply gap factor to spread stars apart a bit
+								entity.setPosition(
+									centerX + getInterpHologramSize() * deltaX / 100f * gapFactor,
+									centerY,
+									centerZ + getInterpHologramSize() * deltaZ / 100f * gapFactor
+								);
+							}
 
-							entity.setPosition(centerX + getInterpHologramSize()*deltaX/100f, centerY + equivY, centerZ + getInterpHologramSize()*deltaZ/100f);
 							entity.setScale(getInterpHologramSize());
 						}
 					}
