@@ -29,35 +29,6 @@ import zmaster587.libVulpes.util.ZUtils.RedstoneState;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ITickable;
-import net.minecraft.util.math.MathHelper;
-import net.minecraftforge.fml.relauncher.Side;
-import zmaster587.advancedRocketry.api.Constants;
-import zmaster587.advancedRocketry.api.dimension.IDimensionProperties;
-import zmaster587.advancedRocketry.api.dimension.solar.StellarBody;
-import zmaster587.advancedRocketry.api.stations.ISpaceObject;
-import zmaster587.advancedRocketry.dimension.DimensionManager;
-import zmaster587.advancedRocketry.dimension.DimensionProperties;
-import zmaster587.advancedRocketry.entity.EntityUIButton;
-import zmaster587.advancedRocketry.entity.EntityUIPlanet;
-import zmaster587.advancedRocketry.entity.EntityUIStar;
-import zmaster587.advancedRocketry.inventory.TextureResources;
-import zmaster587.advancedRocketry.stations.SpaceObjectManager;
-import zmaster587.libVulpes.LibVulpes;
-import zmaster587.libVulpes.inventory.modules.*;
-import zmaster587.libVulpes.network.PacketHandler;
-import zmaster587.libVulpes.network.PacketMachine;
-import zmaster587.libVulpes.util.INetworkMachine;
-import zmaster587.libVulpes.util.ZUtils.RedstoneState;
-import net.minecraft.util.math.BlockPos;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
 
 public class TileHolographicPlanetSelector extends TileEntity implements ITickable,IButtonInventory, IModularInventory, ISliderBar, INetworkMachine {
 
@@ -85,7 +56,7 @@ public class TileHolographicPlanetSelector extends TileEntity implements ITickab
 		starEntities = new LinkedList<>();
 		targetGrav = new ModuleText(6, 45, LibVulpes.proxy.getLocalizedString("msg.planetholo.size"), 0x202020);
 		selectedPlanet = null;
-		stellarMode = true;
+		stellarMode = false;
 		selectedId = Constants.INVALID_PLANET;
 		onTime = 1f;
 		size = 0.02f;
@@ -129,18 +100,7 @@ public class TileHolographicPlanetSelector extends TileEntity implements ITickab
 		boolean powered = world.isBlockIndirectlyGettingPowered(getPos()) > 0;
 		return (!powered && state == RedstoneState.INVERTED) || (powered && state == RedstoneState.ON) || state == RedstoneState.OFF;
 	}
-        public StellarBody getCurrentStar() {
-            try {
-                return DimensionManager.getEffectiveDimId(this.world, this.getPos()).getStar();
-            } catch (Exception e) {
-                try {
-                    return DimensionManager.getEffectiveDimId(-102, new BlockPos(0,0,0)).getStar();
-                } catch (Exception ex) {
-                    return null;
-                }
-            }
-            
-        }
+
 	@Override
 	public void update() {
 		if(!world.isRemote) {
@@ -156,63 +116,12 @@ public class TileHolographicPlanetSelector extends TileEntity implements ITickab
 							entity.setPositionPolar(this.pos.getX() + .5, this.pos.getY() + 1, this.pos.getZ() + .5, getInterpHologramSize()*(.1+ properties.orbitalDist/100f), properties.orbitTheta);
 						entity.setScale(getInterpHologramSize());
 					}
+
 					if(stellarMode) {
-						StellarBody centerStarBody = getCurrentStar();
-						
-						// If no current star, don't show any stars
-						if(centerStarBody == null) {
-							// Optionally clear or hide stars here if needed
-							return; // Exit early - no stars shown
-						}
-
-						EntityUIStar centerStarEntity = null;
 						for(EntityUIStar entity : starEntities) {
-							if(entity.getStarProperties().equals(centerStarBody)) {
-								centerStarEntity = entity;
-								break;
-							}
+							entity.setPosition(this.pos.getX() + .5 + getInterpHologramSize()*entity.getStarProperties().getPosX()/100f, this.pos.getY() + 1, this.pos.getZ() + .5 + getInterpHologramSize()*entity.getStarProperties().getPosZ()/100f);
+							entity.setScale(getInterpHologramSize());
 						}
-
-						if(centerStarEntity == null && !starEntities.isEmpty()) {
-							centerStarEntity = starEntities.get(0);
-						}
-
-						double centerX = centerStarEntity != null ? centerStarEntity.posX : (this.pos.getX() + 0.5);
-						double centerY = this.pos.getY() + 1;
-						double centerZ = centerStarEntity != null ? centerStarEntity.posZ : (this.pos.getZ() + 0.5);
-
-						Random r = new Random();
-						float scale = (float) getInterpHologramSize();
-						double displayRadius = 8.0;
-						double sourceRadius = 500.0;
-						double scaleFactor = displayRadius / sourceRadius;
-
-						for (EntityUIStar entity : starEntities) {
-							double dx = entity.getStarProperties().getPosX() - centerStarBody.getPosX();
-							double dz = entity.getStarProperties().getPosZ() - centerStarBody.getPosZ();
-							double distance = Math.sqrt(dx * dx + dz * dz);
-							if (distance > sourceRadius) continue;
-
-							double deltaX = dx;
-							double deltaZ = dz;
-
-							// Efficient wrapping into [-500, 500)
-							deltaX = ((deltaX + 500) % 1000 + 1000) % 1000 - 500;
-							deltaZ = ((deltaZ + 500) % 1000 + 1000) % 1000 - 500;
-
-							if (entity == centerStarEntity) {
-								entity.setPosition(centerX, centerY, centerZ);
-							} else {
-								double posX = centerX + deltaX * scaleFactor;
-								double posZ = centerZ + deltaZ * scaleFactor;
-								entity.setPosition(posX, centerY, posZ);
-							}
-
-							entity.setScale(scale);
-						}
-
-
-
 					}
 					else {
 						if(!starEntities.isEmpty()) {
